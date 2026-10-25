@@ -124,6 +124,7 @@
   <main class="plan-jeu">
     <div class="scene" id="scene">
       <div class="scene-cadre" id="scene-cadre">
+        <div class="scene-fond" id="scene-fond"></div>
         <div class="scene-boite" id="scene-boite">
           <img class="scene-img" id="scene-img" alt="">
           <div class="scene-calques" id="scene-calques"></div>
@@ -137,8 +138,8 @@
         <div class="scene-sorties" id="scene-sorties"></div>
       </div>
     </div>
-    <aside class="main-joueur">
-      <div class="main-titre">Ramassé</div>
+    <aside class="main-joueur" id="main-joueur" aria-label="Cartes ramassées">
+      <div class="main-titre">Ramassé <button class="lien main-fermer" id="main-fermer">Fermer</button></div>
       <div class="cartes" id="cartes"></div>
     </aside>
   </main>
@@ -150,11 +151,13 @@
       <button class="btn btn-petit" type="submit">OK</button>
     </form>
     <div class="bas-actions">
+      <button class="btn" id="b-main" aria-expanded="false">Ramassé <span class="compte" id="n-main">0</span></button>
       <button class="btn" id="b-dossier">Dossier</button>
       <button class="btn" id="b-plan">Plan</button>
       <button class="btn" id="b-journal">Interphone</button>
       <button class="btn" id="b-indices">Indices</button>
       <button class="btn" id="b-aide">Aide</button>
+      <button class="icone b-plein" aria-label="Plein écran" title="Plein écran (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button>
       <button class="icone" id="b-menu" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     </div>
   </footer>
@@ -193,6 +196,7 @@
 
 <!-- Scènes plein écran : drone, fuite, réacteur, éjection -->
 <section id="speciale" class="speciale" hidden></section>
+<button class="btn plein-global b-plein" title="Plein écran (F)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><span>Plein écran</span></button>
 
 <!-- Silence et rencontres -->
 <div id="silence" class="silence" hidden><p class="silence-titre">Elle est là.</p><p class="silence-sous">Plus un bruit.</p><div class="silence-jauge"><i id="silence-jauge"></i></div><p class="silence-micro" id="silence-micro"></p></div>

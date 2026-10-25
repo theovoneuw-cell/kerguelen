@@ -334,8 +334,34 @@ function rendu() {
 function renduMain() {
   const zone = $("#cartes"); zone.innerHTML = "";
   S.main.forEach(n => zone.appendChild(elCarte(n)));
+  $("#n-main").textContent = S.main.length;
+  // Une carte qui arrive ouvre le tiroir, pour qu'on la voie ; un clic sur l'image le referme.
+  if (S.nouv.length && tableActive()) ouvrirMain(true);
   S.nouv = [];
 }
+function ouvrirMain(on) {
+  $("#main-joueur").classList.toggle("ouvert", on); document.body.classList.toggle("main-ouverte", on);
+  $("#b-main").setAttribute("aria-expanded", on);
+}
+$("#b-main").onclick = () => ouvrirMain(!$("#main-joueur").classList.contains("ouvert"));
+$("#main-fermer").onclick = () => ouvrirMain(false);
+$("#scene-boite").addEventListener("pointerdown", () => ouvrirMain(false));
+
+// ——— Plein écran (sans la barre du navigateur)
+function pleinEcran() {
+  const d = document, el = d.documentElement;
+  if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+  else { const f = el.requestFullscreen || el.webkitRequestFullscreen; if (f) { const r = f.call(el); if (r && r.catch) r.catch(() => {}); } }
+}
+$$(".b-plein").forEach(b => b.onclick = pleinEcran);
+["fullscreenchange", "webkitfullscreenchange"].forEach(ev => document.addEventListener(ev, () => {
+  const on = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  document.body.classList.toggle("plein", on);
+  $$(".b-plein").forEach(b => { b.title = on ? "Quitter le plein écran (F)" : "Plein écran (F)"; b.setAttribute("aria-label", on ? "Quitter le plein écran" : "Plein écran"); });
+}));
+document.addEventListener("keydown", e => {
+  if ((e.key === "f" || e.key === "F") && !e.metaKey && !e.ctrlKey && !e.altKey && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName) && !silenceEnCours) pleinEcran();
+});
 function imageCarte(n) { const c = carte(n); return c.image ? `${RACINE}img/${c.image}.jpg` : null; }
 const ICONE = { meca: "⚙", preuve: "◆", texte: "≡", objet: "" };
 function elCarte(n) {
@@ -350,7 +376,7 @@ function elCarte(n) {
 }
 function renduScene() {
   const L = lieu(S.lieu), img = $("#scene-img"), src = `${RACINE}img/${L.image}.jpg`;
-  if (img.getAttribute("src") !== src) img.src = src;
+  if (img.getAttribute("src") !== src) { img.src = src; $("#scene-fond").style.backgroundImage = `url('${src}')`; }
   $("#scene-titre").textContent = L.nom;
   $("#scene-texte").textContent = L.texte || "";
   // Numéros cachés
@@ -416,9 +442,22 @@ function ambianceLieu() {
   boite.addEventListener("pointermove", e => bouge(e.clientX, e.clientY));
   boite.addEventListener("pointerdown", e => bouge(e.clientX, e.clientY));
 })();
+// L'image (16:9) couvre tout l'écran, sauf si le recadrage cachait un numéro sous une barre ou hors champ :
+// on la réduit alors juste ce qu'il faut, et le fond flou comble les bandes.
+const ETENDUE = (() => { const t = Object.values(J.NOMBRES).flat(); return { x0: Math.min(...t.map(n => n[1])), x1: Math.max(...t.map(n => n[1])), y0: Math.min(...t.map(n => n[2])), y1: Math.max(...t.map(n => n[2])) }; })();
 function ajusterScene() {
-  const cadre = $("#scene-cadre"), b = $("#scene-boite"); const W = cadre.clientWidth, H = cadre.clientHeight;
-  let w = W, h = W * 9 / 16; if (h > H) { h = H; w = H * 16 / 9; } b.style.width = w + "px"; b.style.height = h + "px";
+  const table = $("#table"), cadre = $("#scene-cadre"), b = $("#scene-boite"); const W = cadre.clientWidth, H = cadre.clientHeight;
+  if (!W || !H) return;
+  const haut = $("#table > .barre-haut").offsetHeight, bas = $("#table > .barre-bas").offsetHeight, m = 10;
+  table.style.setProperty("--haut", haut + "px"); table.style.setProperty("--bas", bas + "px");
+  const { x0, x1, y0, y1 } = ETENDUE, demi = v => Math.max(.01, Math.abs(v / 100 - .5));
+  // Centre de l'image au milieu de la zone libre entre les deux barres.
+  const cy = haut + (H - haut - bas) / 2;
+  let w = Math.max(W, H * 16 / 9);
+  w = Math.min(w, (W / 2 - m) / demi(x0), (W / 2 - m) / demi(x1));
+  w = Math.min(w, (cy - haut - m) / demi(y0) * 16 / 9, (H - bas - m - cy) / demi(y1) * 16 / 9);
+  const h = w * 9 / 16;
+  Object.assign(b.style, { width: w + "px", height: h + "px", left: (W - w) / 2 + "px", top: cy - h / 2 + "px" });
 }
 new ResizeObserver(ajusterScene).observe($("#scene-cadre"));
 
@@ -561,10 +600,19 @@ function ouvrirGrille() {
 }
 
 // ——————————————————————————————————————————————— Cinématiques
+// Vidéos chargées d'avance (le prologue), pour qu'elles partent sans calage.
+const PRECHARGEES = new Map();
+function precharger(...noms) {
+  noms.filter(n => VIDEOS.has(n) && !PRECHARGEES.has(n)).forEach(n => {
+    const v = document.createElement("video"); v.src = `${RACINE}media/video/${n}.mp4`; v.muted = true; v.playsInline = true; v.preload = "auto"; v.load(); PRECHARGEES.set(n, v);
+  });
+}
 function media(nom, { boucle = false, image = null } = {}) {
   const box = document.createElement("div"); box.className = "media";
   if (nom && VIDEOS.has(nom)) {
-    const v = document.createElement("video"); v.src = `${RACINE}media/video/${nom}.mp4`; v.muted = true; v.playsInline = true; v.autoplay = true; v.loop = boucle; box.appendChild(v);
+    const v = PRECHARGEES.get(nom) || document.createElement("video"); PRECHARGEES.delete(nom);
+    if (!v.src) v.src = `${RACINE}media/video/${nom}.mp4`;
+    v.muted = true; v.playsInline = true; v.autoplay = true; v.loop = boucle; box.appendChild(v);
     v.play().catch(() => {});
   } else if (image || (nom && nom.startsWith("c-"))) {
     const i = document.createElement("div"); i.className = "media-img"; i.style.backgroundImage = `url('${RACINE}img/${image || nom}.jpg')`; box.appendChild(i);
@@ -647,12 +695,38 @@ function brancherAccusation() {
 $("#b-dossier").onclick = () => ouvrirDossier();
 
 // ——————————————————————————————————————————————— Plan, journal, indices, aide, menu
+// Schéma en coupe : quatre ponts, les lieux connus, et en grisé les portes qui mènent ailleurs.
+const PLAN = {
+  caissons: [62, 13], passerelle: [110, 13], vigie: [152, 13],
+  labo: [122, 33], sport: [162, 33],
+  cantine: [78, 51], cabLemaire: [108, 51], cabOkafor: [134, 51],
+  sas: [40, 62], coursiveC: [78, 62], vestiaire: [40, 74], cabBrandt: [108, 74], cabAranda: [134, 74],
+  chaloupe: [40, 91], coursiveD: [78, 91], machines: [114, 87], soute: [114, 96]
+};
+const PONTS = [["A", 3, 22], ["B", 25, 41], ["C", 44, 81], ["D", 84, 99]];
+// Tracés à angle droit : les montées passent par la cage d'escalier (x 94), les cabines par la coursive.
+function trace(a, b) {
+  const [x1, y1] = PLAN[a], [x2, y2] = PLAN[b];
+  if (x1 === x2 || y1 === y2) return `M${x1},${y1} L${x2},${y2}`;
+  const k = [a, b].sort().join("-");
+  if (/coursiveC-(labo|passerelle)/.test(k)) { const [c, d] = a === "coursiveC" ? [PLAN[a], PLAN[b]] : [PLAN[b], PLAN[a]]; return `M${c[0]},${c[1]} H94 V${d[1]} H${d[0]}`; }
+  if (/coursiveD-(machines|soute)/.test(k)) { const [c, d] = a === "coursiveD" ? [PLAN[a], PLAN[b]] : [PLAN[b], PLAN[a]]; return `M${c[0]},${c[1]} H96 V${d[1]} H${d[0]}`; }
+  const [c, d] = /^coursive/.test(a) ? [PLAN[a], PLAN[b]] : [PLAN[b], PLAN[a]];
+  return `M${c[0]},${c[1]} H${d[0]} V${d[1]}`;
+}
 $("#b-plan").onclick = () => {
-  const vis = Object.entries(J.LIEUX).filter(([id, l]) => !l.cache && (visible(id) || id === S.lieu));
-  const liens = []; vis.forEach(([id, l]) => l.voisins.forEach(v => { if (id < v && vis.some(([x]) => x === v)) liens.push([id, v]); }));
-  $("#plan").innerHTML = `<svg viewBox="0 0 100 100" class="plan-svg">${["A", "B", "C", "D"].map((p, k) => `<text class="pont" x="1" y="${[8, 30, 58, 90][k]}">Pont ${p}</text>`).join("")}` +
-    liens.map(([a, b]) => { const [x1, y1] = lieu(a).pos, [x2, y2] = lieu(b).pos; return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`; }).join("") +
-    vis.map(([id, l]) => `<g class="p-lieu${id === S.lieu ? " ici" : ""}"><circle cx="${l.pos[0]}" cy="${l.pos[1]}" r="${id === S.lieu ? 2.4 : 1.6}"/><text x="${l.pos[0]}" y="${l.pos[1] - 3.2}">${l.nom}</text></g>`).join("") + `</svg>`;
+  const connu = id => PLAN[id] && (visible(id) || id === S.lieu);
+  const vis = Object.keys(PLAN).filter(connu);
+  const devines = [...new Set(vis.flatMap(id => lieu(id).voisins))].filter(v => PLAN[v] && !connu(v) && !lieu(v).cache);
+  const liens = [];
+  vis.forEach(id => lieu(id).voisins.forEach(v => { if (PLAN[v] && (connu(v) || devines.includes(v)) && !liens.some(([x, y]) => x === v && y === id)) liens.push([id, v]); }));
+  const nom = id => lieu(id).nom;
+  $("#plan").innerHTML = `<svg viewBox="0 0 180 100" class="plan-svg" role="img" aria-label="Plan du Kerguelen">` +
+    PONTS.map(([p, y0, y1]) => `<rect class="pont-bande" x="20" y="${y0}" width="158" height="${y1 - y0}" rx="1.5"/><text class="pont" x="2" y="${(y0 + y1) / 2 + 1}">Pont ${p}</text>`).join("") +
+    liens.map(([a, b]) => `<path class="p-lien${devines.includes(b) || devines.includes(a) ? " devine" : ""}" d="${trace(a, b)}"/>`).join("") +
+    devines.map(id => `<g class="p-lieu devine"><circle cx="${PLAN[id][0]}" cy="${PLAN[id][1]}" r="1.4"/><text x="${PLAN[id][0]}" y="${PLAN[id][1] - 3}">${nom(id)}</text></g>`).join("") +
+    vis.map(id => `<g class="p-lieu${id === S.lieu ? " ici" : ""}">${id === S.lieu ? `<circle class="halo" cx="${PLAN[id][0]}" cy="${PLAN[id][1]}" r="4"/>` : ""}<circle cx="${PLAN[id][0]}" cy="${PLAN[id][1]}" r="${id === S.lieu ? 2.2 : 1.7}"/><text x="${PLAN[id][0]}" y="${PLAN[id][1] - 3.4}">${nom(id)}</text></g>`).join("") + `</svg>` +
+    `<p class="plan-legende"><span><i class="l-ici"></i>Vous êtes ici</span><span><i class="l-connu"></i>Lieu connu</span><span><i class="l-devine"></i>Pas encore ouvert</span></p>`;
   $("#m-plan").hidden = false;
 };
 $("#b-journal").onclick = () => {
@@ -715,6 +789,7 @@ if (sauve && sauve.etape !== "fin") $("#b-reprendre").hidden = false;
 function etape(k) { $$(".accueil-etape").forEach(e => e.hidden = +e.dataset.etape !== k); $$("#accueil-etapes li").forEach(l => l.classList.toggle("ici", +l.dataset.e === k)); }
 $$("[data-suite]").forEach(b => b.onclick = () => etape(+b.dataset.suite));
 $("#b-nouvelle").onclick = () => {
+  precharger(...J.RECIT.prologue.map(p => p.video).filter(Boolean));
   Son.demarrer();
   if (sauve && sauve.etape !== "fin" && !confirm("Une partie est en cours. La remplacer par une nouvelle ?")) return;
   ecran("accueil"); etape(1); ouvrirLiaison(); Son.ambiance("AMB_SAS");
