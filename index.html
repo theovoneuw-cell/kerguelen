@@ -2,13 +2,217 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Kerguelen</title>
-<style>
-  :root { color-scheme: dark; }
-  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #050605; color: #7dff9a; font: 16px/1.5 ui-monospace, "SF Mono", Menlo, monospace; }
-  p { margin: 0 16px; letter-spacing: .02em; }
-</style>
+<meta name="description" content="Escape game horrifique à bord d'un remorqueur spatial. Écran commun et téléphones, 2 ou 3 joueurs, environ 1 h 30.">
+<meta name="theme-color" content="#06080a">
+<link rel="icon" href="img/icone.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/jeu.css?v=1">
 </head>
-<body><p>KERGUELEN — liaison en cours…</p></body>
+<body data-version="ad" class="sur-titre">
+
+<!-- ——— Titre -->
+<section id="titre" class="ecran actif">
+  <div class="titre-fond"></div>
+  <div class="titre-contenu">
+    <p class="titre-sur">Harrow-Ikeda · remorqueur-raffinerie de classe K</p>
+    <h1 class="titre-nom">Kerguelen</h1>
+    <p class="titre-sous">Ne la ramenez pas.</p>
+    <div class="titre-actions">
+      <button class="btn btn-principal" id="b-nouvelle">Nouvelle partie</button>
+      <button class="btn" id="b-reprendre" hidden>Reprendre la partie</button>
+    </div>
+    <p class="titre-info">2 ou 3 joueurs · un grand écran pour tous, un ou deux téléphones · environ 1 h 30 · <span id="titre-version"></span></p>
+  </div>
+</section>
+
+<!-- ——— Avant de jouer -->
+<section id="accueil" class="ecran">
+  <div class="accueil-boite">
+    <ol class="accueil-etapes" id="accueil-etapes">
+      <li data-e="1">Installation</li><li data-e="2">Téléphones</li><li data-e="3">Comment jouer</li><li data-e="4">Équipe</li>
+    </ol>
+
+    <div class="accueil-etape" data-etape="1">
+      <h2>Installez-vous</h2>
+      <ul class="consignes">
+        <li><b>Tout le monde face au grand écran.</b> C'est le vaisseau : les lieux, les objets, les voix, les cinématiques. On le regarde ensemble.</li>
+        <li><b>Lumière éteinte</b>, <span class="seul-son">le son fort ou un casque partagé.</span><span class="seul-ad">en version audiodescription, tous les sons sont décrits à l'écran, entre crochets.</span></li>
+        <li><b>Un ou deux téléphones</b>, chargés, luminosité au maximum. Ils serviront de manuel, de détecteur et d'instruments : micro, pouce, inclinaison, caméra.</li>
+        <li><b>Une souris</b> pour celui qui fouille : elle sert de lampe.</li>
+      </ul>
+      <button class="btn btn-principal" data-suite="2">Suivant</button>
+    </div>
+
+    <div class="accueil-etape" data-etape="2" hidden>
+      <h2>Les téléphones</h2>
+      <div class="tel-grille">
+        <div class="tel-qr"><div id="qr"></div><p class="tel-url" id="url-tel"></p></div>
+        <div class="tel-texte">
+          <p>Scannez ce code avec chaque téléphone. Chacun choisit son rôle :</p>
+          <dl class="roles">
+            <div><dt>Le Manuel de bord</dt><dd>Les procédures, les plans, les tableaux. Celui qui l'a lit à voix haute ; il ne montre pas son écran.</dd></div>
+            <div><dt>Le Détecteur de mouvement</dt><dd>Il bipe quand la bête approche. Mais ses bips font du bruit : pour le faire taire, on le pose face contre la table.</dd></div>
+          </dl>
+          <p class="petit">Avec un seul téléphone, il a les deux. Autorisez le <b>micro</b> et les <b>mouvements</b> quand on vous le demande : le vaisseau doit entendre votre pièce. Rien n'est enregistré ni envoyé.</p>
+          <ul class="liste-tels" id="liste-tels"><li class="vide">Aucun téléphone pour l'instant.</li></ul>
+          <div class="essai-micro" id="essai-micro" hidden>
+            <p><b>Essai du silence.</b> Faites du bruit, puis taisez-vous : la jauge doit retomber.</p>
+            <div class="jauge-micro"><i id="jauge-micro"></i><span class="seuil"></span></div>
+          </div>
+          <p class="petit sans-tel">Pas de téléphone ? <button class="lien" id="b-sans-tel">Jouer sans</button> : le manuel s'ouvrira dans une autre fenêtre et les instruments seront simulés à l'écran. Ce n'est pas la même expérience.</p>
+        </div>
+      </div>
+      <div class="accueil-nav"><button class="btn" data-suite="1">Retour</button><button class="btn btn-principal" data-suite="3">Suivant</button></div>
+    </div>
+
+    <div class="accueil-etape" data-etape="3" hidden>
+      <h2>Comment jouer</h2>
+      <div class="regles">
+        <div class="regle"><span class="regle-ico ico-lampe"></span><p><b>La lampe.</b> Les lieux sont dans le noir. La souris éclaire un rond : promenez-la pour fouiller.</p></div>
+        <div class="regle"><span class="regle-ico ico-num">17</span><p><b>Les numéros cachés.</b> Des numéros sont peints dans le décor. Tapez-en un dans <i>Prendre</i> pour ramasser la carte. Fouiller au hasard fait du bruit.</p></div>
+        <div class="regle"><span class="regle-ico ico-plus">+</span><p><b>Combiner.</b> Glissez une carte sur une autre pour les utiliser ensemble. Touchez une carte pour l'ouvrir : certaines se manipulent.</p></div>
+        <div class="regle"><span class="regle-ico ico-dossier"></span><p><b>L'enquête.</b> Le <i>Dossier</i> rassemble les suspects et les preuves trouvées. À la fin, il faudra désigner un coupable devant VIGIE.</p></div>
+        <div class="regle"><span class="regle-ico ico-bruit"></span><p><b>Le bruit.</b> La bête est aveugle et chasse au son. Chaque erreur fait du bruit et l'attire. Surveillez le détecteur avant d'entrer quelque part.</p></div>
+        <div class="regle"><span class="regle-ico ico-silence"></span><p><b>Le silence.</b> Quand elle passe tout près, l'écran s'éteint : <b>plus un bruit dans la pièce</b>. Le micro écoute. Un rire, un mot, et elle vous a trouvés.</p></div>
+      </div>
+      <p class="petit">Le temps presse : 90 minutes avant la combustion. Bloqués ? <i>Indices</i> en donne trois par énigme, du plus discret à la solution ; chacun coûte deux minutes. Trois rencontres avec la bête, et c'est fini.</p>
+      <div class="accueil-nav"><button class="btn" data-suite="2">Retour</button><button class="btn btn-principal" data-suite="4">Suivant</button></div>
+    </div>
+
+    <div class="accueil-etape" data-etape="4" hidden>
+      <h2>L'équipe de raffinerie</h2>
+      <p>Deux ou trois techniciens. Vos prénoms figureront sur l'ordre de mission.</p>
+      <div class="noms">
+        <input id="nom-1" maxlength="16" placeholder="Technicien 1" autocomplete="off">
+        <input id="nom-2" maxlength="16" placeholder="Technicien 2" autocomplete="off">
+        <input id="nom-3" maxlength="16" placeholder="Technicien 3 (facultatif)" autocomplete="off">
+      </div>
+      <div class="accueil-nav"><button class="btn" data-suite="3">Retour</button><button class="btn btn-principal" id="b-brief">Lire l'ordre de mission</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ——— Ordre de mission -->
+<section id="brief" class="ecran">
+  <div class="brief-doc" id="brief-doc"></div>
+  <button class="btn btn-principal" id="b-embarquer">Rentrer au vaisseau</button>
+</section>
+
+<!-- ——— Cinématiques -->
+<section id="cine" class="ecran">
+  <div class="cine-media" id="cine-media"></div>
+  <div class="cine-texte" id="cine-texte"></div>
+  <button class="cine-suite" id="cine-suite">Continuer</button>
+</section>
+
+<!-- ——— La table -->
+<section id="table" class="ecran">
+  <header class="barre-haut">
+    <div class="chapitre"><span class="chap-num" id="chap-num"></span><span class="chap-titre" id="chap-titre"></span></div>
+    <p class="objectif" id="objectif"></p>
+    <div class="jauges">
+      <div class="bruit" title="Bruit"><span class="j-nom">Bruit</span><div class="bruit-barre"><i id="bruit"></i></div></div>
+      <div class="rencontres" id="rencontres" title="Rencontres avec la bête"><i></i><i></i><i></i></div>
+      <div class="chrono" id="chrono" title="Temps avant la combustion">90:00</div>
+    </div>
+  </header>
+
+  <main class="plan-jeu">
+    <div class="scene" id="scene">
+      <div class="scene-cadre" id="scene-cadre">
+        <div class="scene-boite" id="scene-boite">
+          <img class="scene-img" id="scene-img" alt="">
+          <div class="scene-calques" id="scene-calques"></div>
+          <div class="scene-noir" id="scene-noir"></div>
+          <div class="scene-uv" id="scene-uv"></div>
+        </div>
+      </div>
+      <div class="scene-legende">
+        <h2 id="scene-titre"></h2>
+        <p id="scene-texte"></p>
+        <div class="scene-sorties" id="scene-sorties"></div>
+      </div>
+    </div>
+    <aside class="main-joueur">
+      <div class="main-titre">Ramassé</div>
+      <div class="cartes" id="cartes"></div>
+    </aside>
+  </main>
+
+  <footer class="barre-bas">
+    <form class="pioche" id="pioche" autocomplete="off">
+      <label for="pioche-n">Prendre</label>
+      <input id="pioche-n" inputmode="numeric" pattern="[0-9]*" maxlength="3" placeholder="n°">
+      <button class="btn btn-petit" type="submit">OK</button>
+    </form>
+    <div class="bas-actions">
+      <button class="btn" id="b-dossier">Dossier</button>
+      <button class="btn" id="b-plan">Plan</button>
+      <button class="btn" id="b-journal">Interphone</button>
+      <button class="btn" id="b-indices">Indices</button>
+      <button class="btn" id="b-aide">Aide</button>
+      <button class="icone" id="b-menu" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    </div>
+  </footer>
+</section>
+
+<!-- ——— Fin -->
+<section id="fin" class="ecran">
+  <div class="fin-boite">
+    <p class="fin-sur">Fin</p>
+    <h2 id="fin-titre"></h2>
+    <div class="fin-rapport">
+      <h3>Rapport d'incident — VIGIE</h3>
+      <ol id="fin-rapport"></ol>
+      <p class="fin-trouve" id="fin-trouve"></p>
+    </div>
+    <dl class="fin-bilan" id="fin-bilan"></dl>
+    <div class="fin-generique" id="fin-generique"></div>
+    <div class="fin-actions"><button class="btn" id="b-chapitre" hidden>Reprendre au début du chapitre</button><button class="btn btn-principal" id="b-titre">Revenir au titre</button></div>
+  </div>
+</section>
+
+<!-- ——— Fenêtres -->
+<div class="modale" id="m-carte" hidden><div class="modale-fond" data-fermer></div><article class="carte-grande" id="carte-grande"></article></div>
+<div class="modale" id="m-billet" hidden><div class="modale-fond"></div><div class="billet"><div class="billet-texte" id="billet-texte"></div><button class="btn btn-principal" id="billet-ok">Continuer</button></div></div>
+<div class="modale" id="m-dossier" hidden><div class="modale-fond" data-fermer></div><div class="panneau large" id="dossier"></div></div>
+<div class="modale" id="m-plan" hidden><div class="modale-fond" data-fermer></div><div class="panneau large"><h2>Plan du Kerguelen</h2><div id="plan"></div><p class="petit">La bête n'apparaît pas sur le plan : seul le détecteur la voit.</p><button class="btn" data-fermer>Fermer</button></div></div>
+<div class="modale" id="m-journal" hidden><div class="modale-fond" data-fermer></div><div class="panneau"><h2>Journal d'interphone</h2><p class="petit">Les messages reçus, pour les réécouter.</p><ol id="journal"></ol><button class="btn" data-fermer>Fermer</button></div></div>
+<div class="modale" id="m-indices" hidden><div class="modale-fond" data-fermer></div><div class="panneau"><h2>Indices</h2><p class="petit">Chaque indice coûte deux minutes.</p><div id="indices"></div><button class="btn" data-fermer>Fermer</button></div></div>
+<div class="modale" id="m-aide" hidden><div class="modale-fond" data-fermer></div><div class="panneau large" id="aide"></div></div>
+<div class="modale" id="m-menu" hidden><div class="modale-fond" data-fermer></div><div class="panneau">
+  <h2>Pause</h2><p class="petit" id="menu-info"></p>
+  <label class="reglage seul-son">Musique <input type="range" id="vol-mus" min="0" max="1" step="0.05" value="0.5"></label>
+  <p class="petit">Téléphones : <span id="menu-url"></span></p>
+  <div class="menu-actions"><button class="btn" data-fermer>Reprendre</button><button class="btn" id="b-couper" >Couper le son</button><button class="btn btn-danger" id="b-recommencer">Recommencer depuis le début</button></div>
+</div></div>
+
+<!-- Scènes plein écran : drone, fuite, réacteur, éjection -->
+<section id="speciale" class="speciale" hidden></section>
+
+<!-- Silence et rencontres -->
+<div id="silence" class="silence" hidden><p class="silence-titre">Elle est là.</p><p class="silence-sous">Plus un bruit.</p><div class="silence-jauge"><i id="silence-jauge"></i></div><p class="silence-micro" id="silence-micro"></p></div>
+<div id="rencontre" class="rencontre" hidden></div>
+<div id="flash" class="flash"></div>
+
+<!-- Détecteur de secours, quand aucun téléphone ne le porte -->
+<div id="det-ecran" class="det-ecran" hidden><canvas width="180" height="180"></canvas><button class="lien" id="det-retourner">Retourner</button></div>
+
+<div id="ad" class="ad" aria-live="polite"></div>
+<div id="ad-ambiance" class="ad-ambiance"></div>
+<div id="sous-titre" class="sous-titre" aria-live="polite"></div>
+<div id="toast" class="toast" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="js/donnees.js?v=1"></script>
+<script src="js/medias.js?v=1"></script>
+<script src="js/son.js?v=1"></script>
+<script src="js/mecas.js?v=1"></script>
+<script type="module" src="js/jeu.js?v=1"></script>
+</body>
 </html>

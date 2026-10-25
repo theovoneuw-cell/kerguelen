@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Kerguelen · téléphone</title>
+<meta name="theme-color" content="#06080a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="img/icone.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tel.css?v=1">
+</head>
+<body>
+<main id="app">
+  <section id="debut" class="vue on">
+    <p class="marque">Kerguelen</p>
+    <h1>Instrument de bord</h1>
+    <p>Choisissez le rôle de ce téléphone.</p>
+    <div class="choix-role">
+      <button data-role="manuel"><b>Manuel de bord</b><span>Procédures, plans, tableaux. Vous lisez à voix haute.</span></button>
+      <button data-role="detecteur"><b>Détecteur de mouvement</b><span>Il bipe quand la bête approche.</span></button>
+      <button data-role="deux"><b>Les deux</b><span>Un seul téléphone pour l'équipe.</span></button>
+    </div>
+    <p class="note">On va vous demander le <b>micro</b> (le jeu mesure le bruit de la pièce : rien n'est enregistré ni envoyé) et les <b>mouvements</b> du téléphone. Gardez l'écran allumé.</p>
+    <p id="debut-err" class="err" role="alert"></p>
+  </section>
+
+  <header id="tete" hidden>
+    <span class="marque">Kerguelen</span>
+    <nav id="onglets"><button data-vue="manuel">Manuel</button><button data-vue="detecteur">Détecteur</button></nav>
+    <span id="liaison" class="liaison"><i></i><span>hors liaison</span></span>
+  </header>
+
+  <section id="manuel" class="vue"><div id="niveaux"></div></section>
+
+  <section id="detecteur" class="vue">
+    <div class="det-boite"><canvas id="radar" width="640" height="640"></canvas><p id="det-etat" class="det-etat">Pas de batterie.</p></div>
+    <p class="note">Le centre, c'est vous ; le haut, c'est l'avant du vaisseau. <b>Posé face contre la table, il se tait.</b></p>
+  </section>
+
+  <!-- Instruments demandés par l'écran -->
+  <section id="instrument" class="instrument" hidden>
+    <div class="ins-pouce" hidden>
+      <h2>Contrôle biologique</h2>
+      <button id="pad" class="pad"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="54" class="piste"/><circle cx="60" cy="60" r="54" class="charge"/><path class="empreinte" d="M44 82c-4-8-6-15-6-22a22 22 0 0 1 44 0c0 6-1 11-3 16M52 88c-4-8-6-17-6-28a14 14 0 0 1 28 0c0 9-2 17-5 23M60 92c-3-9-5-19-5-32a5 5 0 0 1 10 0c0 10-1 19-3 26"/></svg></button>
+      <p class="ins-consigne">Posez le pouce et gardez-le jusqu'à ce que le cercle soit plein. Puis passez le téléphone au suivant.</p>
+      <p id="pouce-compte" class="ins-compte"></p>
+    </div>
+    <div class="ins-souffle" hidden>
+      <h2>Soufflez</h2>
+      <div class="jauge"><i id="souffle-jauge"></i></div>
+      <p class="ins-consigne">Soufflez fort et longtemps sur le bas du téléphone, là où est le micro.</p>
+    </div>
+    <div class="ins-drone" hidden>
+      <h2>Drone d'inspection</h2>
+      <div class="niveau-bulle"><span id="bulle"></span></div>
+      <p class="ins-consigne">Téléphone à plat dans la main. Penchez à gauche ou à droite pour choisir une branche, vers l'avant pour avancer, vers vous pour reculer.</p>
+      <p id="drone-ordre" class="ins-compte"></p>
+      <button id="b-uv" class="btn-uv">Caméra UV</button>
+    </div>
+    <div class="ins-silence" hidden>
+      <p class="sil-titre">Silence.</p>
+      <div class="jauge"><i id="silence-niveau"></i><span id="silence-seuil" class="seuil"></span></div>
+    </div>
+  </section>
+
+  <section id="camera" class="camera" hidden>
+    <video id="flux" playsinline muted></video>
+    <canvas id="uv"></canvas>
+    <p class="cam-note">Filmez l'écran du drone.</p>
+    <button id="cam-fermer" class="cam-fermer">Fermer</button>
+  </section>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+<script src="js/manuel.js?v=1"></script>
+<script type="module" src="js/tel.js?v=1"></script>
+</body>
+</html>
