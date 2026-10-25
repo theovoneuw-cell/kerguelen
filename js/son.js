@@ -179,5 +179,5 @@
   function couper(v) { coupe = v; if (maitre) maitre.gain.value = v ? 0 : 1; }
   function volumeMusique(v) { if (busMus) busMus.gain.value = v; }
 
-  G.Son = { AD, init(j) { J = j; }, demarrer, jouer, ambiance, musique, voix, couperVoix, bips, note, chant: o => (AD ? decrire("BETE_CHANT") : ctx && !coupe && chant(o)), silence, couper, volumeMusique, decrire, get coupe() { return coupe; }, NOTES };
+  G.Son = { AD, init(j) { J = j; }, demarrer, jouer, ambiance, musique, voix, couperVoix, bips, note, chant: o => (AD ? decrire("BETE_CHANT") : !o && MEDIAS.has("BETE_CHANT") ? jouer("BETE_CHANT") : ctx && !coupe && chant(o)), silence, couper, volumeMusique, decrire, get coupe() { return coupe; }, NOTES };
 })(window);
