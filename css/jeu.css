@@ -149,7 +149,7 @@ body.panne .scene-noir { background: radial-gradient(circle calc(var(--rayon) * 
 .sortie::before { content: "→ "; color: var(--pale); }
 .sortie .verrou { color: var(--pale); font-size: .8em; margin-left: .3em; }
 
-.main-joueur { position: absolute; z-index: 13; right: 0; top: var(--haut); bottom: var(--bas); width: 300px; padding: 14px; overflow: auto; background: rgba(13,17,20,.92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-left: 1px solid var(--ligne-2); transform: translateX(100%); visibility: hidden; transition: transform .32s cubic-bezier(.2,.8,.2,1), visibility 0s .32s; }
+.main-joueur { position: absolute; z-index: 13; right: 0; top: var(--haut); bottom: var(--bas); width: 340px; padding: 14px; overflow: auto; background: rgba(13,17,20,.92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-left: 1px solid var(--ligne-2); transform: translateX(100%); visibility: hidden; transition: transform .32s cubic-bezier(.2,.8,.2,1), visibility 0s .32s; }
 .main-joueur.ouvert { transform: none; visibility: visible; transition: transform .32s cubic-bezier(.2,.8,.2,1); }
 .main-titre { font-family: var(--f-titre); color: var(--doux); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: baseline; }
 .main-fermer { font-family: var(--f-texte); font-size: .85rem; }
@@ -172,13 +172,28 @@ body.panne .scene-noir { background: radial-gradient(circle calc(var(--rayon) * 
 .c-img.vide { background: repeating-linear-gradient(135deg, #0d1215 0 6px, #0a0e11 6px 12px); }
 .c-titre { padding: 6px 7px 7px; font-size: .82rem; line-height: 1.25; }
 
-.barre-bas { display: flex; align-items: center; justify-content: space-between; padding: 10px 18px; border-top: 1px solid rgba(255,255,255,.05); background: linear-gradient(0deg, rgba(8,10,12,.92), rgba(8,10,12,.76)); }
+.barre-bas { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 10px 18px; border-top: 1px solid rgba(255,255,255,.05); background: linear-gradient(0deg, rgba(8,10,12,.92), rgba(8,10,12,.76)); }
 .plein-global { position: fixed; z-index: 60; top: 16px; right: 16px; display: none; align-items: center; gap: 8px; }
 .plein-global svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; }
 body:has(#titre.actif) .plein-global, body:has(#accueil.actif) .plein-global { display: inline-flex; }
 body.plein .plein-global { display: none !important; }
 .pioche { display: flex; align-items: center; gap: 8px; } .pioche label { font-family: var(--f-titre); color: var(--doux); } .pioche input { width: 70px; text-align: center; font-family: var(--f-ecran); }
-.bas-actions { display: flex; gap: 8px; align-items: center; }
+.bas-actions { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+/* Le sac en petit : vignettes défilantes entre « Prendre » et les boutons. Un clic ouvre la carte. */
+.mini-sac { flex: 1 1 160px; min-width: 0; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 0; -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent); }
+.mini-sac::-webkit-scrollbar { display: none; }
+.mini-carte { position: relative; flex: none; width: 46px; height: 34px; padding: 0; background: #0a0d10; border: 1px solid var(--ligne-2); border-radius: 2px; cursor: pointer; overflow: hidden; }
+.mini-carte:hover { border-color: var(--doux); }
+.mini-carte .mi-img { position: absolute; inset: 0; background: center/cover no-repeat; opacity: .7; }
+.mini-carte .mi-img.vide { background: repeating-linear-gradient(135deg, #0d1215 0 4px, #0a0e11 4px 8px); }
+.mini-carte .mi-num { position: absolute; left: 3px; bottom: 1px; font: 700 .78rem var(--f-titre); color: var(--texte); text-shadow: 0 0 3px #000, 0 0 2px #000; }
+.mini-carte.nouvelle { border-color: var(--accent); animation: arrive .7s ease-out; }
+#b-main.nouvelle .compte { animation: pique .6s; }
+/* Fenêtre étroite : le sac passe sur sa propre ligne, les boutons se resserrent. */
+@media (max-width: 1180px) {
+  .mini-sac { order: 3; flex-basis: 100%; }
+  .bas-actions { gap: 6px; } .bas-actions .btn { padding: .5em .75em; font-size: .92rem; }
+}
 
 /* ——— Fenêtres */
 .modale { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; }
@@ -413,7 +428,7 @@ body.secousse .ecran.actif, body.secousse .speciale { animation: secousse .45s; 
 .det-ecran { position: fixed; right: 16px; top: 70px; z-index: 20; background: rgba(0,0,0,.75); border: 1px solid var(--ligne-2); padding: 6px; display: grid; justify-items: center; gap: 4px; }
 .det-ecran canvas { width: 140px; height: 140px; } .det-ecran.retourne canvas { opacity: .15; }
 
-body.main-ouverte .det-ecran { right: 316px; }
+body.main-ouverte .det-ecran { right: 356px; }
 @media (max-width: 1100px) { .main-joueur { width: 250px; } body.main-ouverte .det-ecran { right: 266px; } .regles { grid-template-columns: 1fr; } .tel-grille { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .titre-fond, .media-img, .cine-media .media video { animation: none; } }
 /* Vue de contrôle des numéros (tests) */

@@ -335,12 +335,21 @@ function renduMain() {
   const zone = $("#cartes"); zone.innerHTML = "";
   S.main.forEach(n => zone.appendChild(elCarte(n)));
   $("#n-main").textContent = S.main.length;
-  // Une carte qui arrive ouvre le tiroir, pour qu'on la voie ; un clic sur l'image le referme.
-  if (S.nouv.length && tableActive()) ouvrirMain(true);
+  // Aperçu du sac dans la barre du bas ; le grand inventaire ne s'ouvre que par le bouton « Ramassé ».
+  const mini = $("#mini-sac"); mini.innerHTML = "";
+  S.main.forEach(n => {
+    const c = carte(n), img = imageCarte(n), b = document.createElement("button");
+    b.className = "mini-carte" + (S.nouv.includes(n) ? " nouvelle" : ""); b.title = `${n} · ${c.titre.replace(/<[^>]+>/g, "")}`;
+    b.innerHTML = `<span class="mi-img${img ? "" : " vide"}"${img ? ` style="background-image:url('${img}')"` : ""}></span><span class="mi-num">${n}</span>`;
+    b.onclick = () => ouvrirCarte(n);
+    mini.appendChild(b);
+  });
+  if (S.nouv.length) { $("#b-main").classList.remove("nouvelle"); void $("#b-main").offsetWidth; $("#b-main").classList.add("nouvelle"); mini.scrollLeft = mini.scrollWidth; }
   S.nouv = [];
 }
 function ouvrirMain(on) {
   $("#main-joueur").classList.toggle("ouvert", on); document.body.classList.toggle("main-ouverte", on);
+  if (on) $("#b-main").classList.remove("nouvelle");
   $("#b-main").setAttribute("aria-expanded", on);
 }
 $("#b-main").onclick = () => ouvrirMain(!$("#main-joueur").classList.contains("ouvert"));
@@ -459,7 +468,7 @@ function ajusterScene() {
   const h = w * 9 / 16;
   Object.assign(b.style, { width: w + "px", height: h + "px", left: (W - w) / 2 + "px", top: cy - h / 2 + "px" });
 }
-new ResizeObserver(ajusterScene).observe($("#scene-cadre"));
+{ const ro = new ResizeObserver(ajusterScene); ["#scene-cadre", "#table > .barre-haut", "#table > .barre-bas"].forEach(q => ro.observe($(q))); }
 
 // ——————————————————————————————————————————————— Glisser-déposer
 function glisser(el, n) {
