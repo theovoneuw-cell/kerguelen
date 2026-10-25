@@ -76,7 +76,7 @@
         <div class="regle"><span class="regle-ico ico-num">17</span><p><b>Les numéros cachés.</b> Des numéros sont peints dans le décor. Tapez-en un dans <i>Prendre</i> pour ramasser la carte. Fouiller au hasard fait du bruit.</p></div>
         <div class="regle"><span class="regle-ico ico-plus">+</span><p><b>Combiner.</b> Glissez une carte sur une autre pour les utiliser ensemble. Touchez une carte pour l'ouvrir : certaines se manipulent.</p></div>
         <div class="regle"><span class="regle-ico ico-dossier"></span><p><b>L'enquête.</b> Le <i>Dossier</i> rassemble les suspects et les preuves trouvées. À la fin, il faudra désigner un coupable devant VIGIE.</p></div>
-        <div class="regle"><span class="regle-ico ico-bruit"></span><p><b>Le bruit.</b> La bête est aveugle et chasse au son. Chaque erreur fait du bruit et l'attire. Surveillez le détecteur avant d'entrer quelque part.</p></div>
+        <div class="regle"><span class="regle-ico ico-bruit"></span><p><b>Le bruit.</b> La bête est aveugle et chasse au son. Chaque erreur fait du bruit et l'attire, <b>et le téléphone écoute la pièce pendant toute la partie</b> : parlez bas. Surveillez le détecteur avant d'entrer quelque part.</p></div>
         <div class="regle"><span class="regle-ico ico-silence"></span><p><b>Le silence.</b> Quand elle passe tout près, l'écran s'éteint : <b>plus un bruit dans la pièce</b>. Le micro écoute. Un rire, un mot, et elle vous a trouvés.</p></div>
       </div>
       <p class="petit">Le temps presse : 90 minutes avant le départ du vaisseau vers la Terre. Bloqués ? <i>Indices</i> en donne trois par énigme, du plus discret à la solution ; chacun coûte deux minutes. Trois rencontres avec la bête, et c'est fini.</p>
@@ -115,7 +115,7 @@
     <div class="chapitre"><span class="chap-num" id="chap-num"></span><span class="chap-titre" id="chap-titre"></span></div>
     <p class="objectif" id="objectif"></p>
     <div class="jauges">
-      <div class="bruit" title="Bruit"><span class="j-nom">Bruit</span><div class="bruit-barre"><i id="bruit"></i></div></div>
+      <div class="bruit" title="Bruit"><span class="j-micro" id="j-micro" title="Le téléphone écoute la pièce" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span><span class="j-nom">Bruit</span><div class="bruit-barre"><i id="bruit"></i></div></div>
       <div class="rencontres" id="rencontres" title="Rencontres avec la bête"><i></i><i></i><i></i></div>
       <div class="chrono" id="chrono" title="Temps avant le départ vers la Terre">90:00</div>
     </div>

@@ -119,6 +119,8 @@ select { font: inherit; color: var(--texte); background: #05070a; border: 1px so
 .objectif::before { content: "Objectif — "; color: var(--doux); }
 .jauges { display: flex; align-items: center; gap: 22px; }
 .bruit { display: flex; align-items: center; gap: 8px; font-size: .82rem; color: var(--doux); }
+.j-micro { display: inline-grid; place-items: center; color: var(--doux); } .j-micro svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.j-micro.entendu { animation: entendu 1.2s ease-out; } @keyframes entendu { 0%, 30% { color: var(--danger); transform: scale(1.25); } }
 .bruit-barre { width: 120px; height: 6px; background: #05070a; border: 1px solid var(--ligne-2); position: relative; }
 .bruit-barre i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--doux); transition: width .25s, background .3s; }
 .bruit.haut .bruit-barre i { background: var(--danger); }

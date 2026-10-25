@@ -10,6 +10,9 @@
   const MEDIAS = new Set(G.__MEDIAS || []);
   let ctx = null, maitre = null, busMus = null, busAmb = null, busSfx = null, busVoix = null, coupe = false;
   let J = null;
+  // Le jeu signale quand il joue lui-même un son : le micro des téléphones ne doit pas le compter comme du bruit des joueurs.
+  let occupeJusqu = 0;
+  const occuper = ms => { occupeJusqu = Math.max(occupeJusqu, performance.now() + ms); };
 
   function demarrer() {
     if (AD || ctx) { if (ctx && ctx.state === "suspended") ctx.resume(); return; }
@@ -114,8 +117,8 @@
     if (AD) { decrire(code, opts); return; }
     if (!ctx || coupe) return;
     const buf = await tampon(code);
-    if (buf) { lireTampon(buf, busSfx, opts); return; }
-    if (SYNTH[code]) SYNTH[code]();
+    if (buf) { occuper(buf.duration * 1000 + 400); lireTampon(buf, busSfx, opts); return; }
+    if (SYNTH[code]) { occuper(1800); SYNTH[code](); }
   }
   let ambCourante = null, ambCode = null;
   async function ambiance(code, fondu = 2) {
@@ -157,7 +160,7 @@
       voixCourante = { fin: terminer, arreter: () => { try { source && source.s.stop(); } catch (_) {} terminer(); } };
       if (!AD && ctx && !coupe) {
         const buf = await tampon(code);
-        if (buf && !fini) { clearTimeout(t); source = lireTampon(buf, busVoix); source.s.onended = () => setTimeout(terminer, 350); voixCourante.arreter = () => { try { source.s.stop(); } catch (_) {} terminer(); }; }
+        if (buf && !fini) { clearTimeout(t); source = lireTampon(buf, busVoix); voixCourante.joue = true; source.s.onended = () => setTimeout(terminer, 350); voixCourante.arreter = () => { try { source.s.stop(); } catch (_) {} terminer(); }; }
       }
     });
   }
@@ -166,9 +169,10 @@
   // Bips d'interface (claviers de service, détecteur de secours, notes du verrou) : toujours synthétisés.
   function bips(paires, { ecart = .32, duree = .18 } = {}) {
     if (AD || !ctx || coupe) return;
+    occuper(paires.length * ecart * 1000 + 150);
     paires.forEach((p, i) => [].concat(p).forEach(f => ton(f, duree, { gain: .09, quand: i * ecart })));
   }
-  function note(k) { if (!AD && ctx && !coupe) { ton(NOTES[k - 1], .6, { gain: .2, type: "triangle", attaque: .03 }); ton(NOTES[k - 1] * 2, .6, { gain: .06 }); } }
+  function note(k) { if (!AD && ctx && !coupe) { occuper(700); ton(NOTES[k - 1], .6, { gain: .2, type: "triangle", attaque: .03 }); ton(NOTES[k - 1] * 2, .6, { gain: .06 }); } }
 
   // Silence : tout baisse, sauf ce que la bête fait.
   function silence(on) {
@@ -179,5 +183,5 @@
   function couper(v) { coupe = v; if (maitre) maitre.gain.value = v ? 0 : 1; }
   function volumeMusique(v) { if (busMus) busMus.gain.value = v; }
 
-  G.Son = { AD, init(j) { J = j; }, demarrer, jouer, ambiance, musique, voix, couperVoix, bips, note, chant: o => (AD ? decrire("BETE_CHANT") : !o && MEDIAS.has("BETE_CHANT") ? jouer("BETE_CHANT") : ctx && !coupe && chant(o)), silence, couper, volumeMusique, decrire, get coupe() { return coupe; }, NOTES };
+  G.Son = { AD, init(j) { J = j; }, occupe: () => !AD && !!ctx && !coupe && (performance.now() < occupeJusqu || !!(voixCourante && voixCourante.joue)), demarrer, jouer, ambiance, musique, voix, couperVoix, bips, note, chant: o => (AD ? decrire("BETE_CHANT") : !o && MEDIAS.has("BETE_CHANT") ? jouer("BETE_CHANT") : ctx && !coupe && chant(o)), silence, couper, volumeMusique, decrire, get coupe() { return coupe; }, NOTES };
 })(window);

@@ -73,7 +73,7 @@ function recevoir(id, d) {
   switch (d.t) {
     case "role": t.role = d.role; majTels(); envoyerEtat(id); break;
     case "perm": t.micro = !!d.micro; t.mouvement = !!d.mouvement; majTels(); break;
-    case "niveau": t.db = d.db; t.depasse = d.depasse; if ($("#essai-micro") && !$("#essai-micro").hidden) $("#jauge-micro").style.width = Math.max(0, Math.min(100, (d.db + 80) * 1.4)) + "%"; if (silenceEnCours && d.depasse) silenceEnCours.bruit(); break;
+    case "niveau": t.db = d.db; t.depasse = d.depasse; ecouterPiece(t, d.db); if ($("#essai-micro") && !$("#essai-micro").hidden) $("#jauge-micro").style.width = Math.max(0, Math.min(100, (d.db + 80) * 1.4)) + "%"; if (silenceEnCours && d.depasse) silenceEnCours.bruit(); break;
     case "face": t.face = !!d.bas; break;
     case "manuel": if (S) { S.flags["manuel" + d.niveau] = true; if (d.niveau >= 2) S.flags.fulmar = true; sauver(); } break;
     default: Mecas.message && Mecas.message(id, d);
@@ -86,6 +86,7 @@ function envoyerEtat(id) {
   if (id) hote.envoyer(id, m); else hote.diffuser(m);
 }
 function instrument(nom, params = {}, cible = null) {
+  if (nom === "souffle") souffleEnCours = !!params.on;
   if (!hote) return 0;
   const ids = cible ? [cible] : [...tels.keys()];
   ids.forEach(id => hote.envoyer(id, { t: "instrument", nom, ...params }));
@@ -133,6 +134,21 @@ document.addEventListener("visibilitychange", () => { dernier = performance.now(
 function retirerTemps(min, raison) { if (S.autod) return; S.restant -= min * MIN; if (raison) toast(raison); majHaut(); }
 
 // ——————————————————————————————————————————————— Bruit
+// Les téléphones écoutent la pièce pendant toute la partie : un mot trop fort, un rire, et la jauge monte comme pour une erreur.
+// Seuil : 12 dB au-dessus du fond de la pièce (20e centile de la dernière minute), qui inclut l'ambiance du Mac.
+// Le micro est ignoré quand le jeu joue lui-même un son (cris, voix, bips), pendant les silences (comptés à part) et quand on souffle exprès.
+let souffleEnCours = false, dernierEntendu = 0;
+function ecouterPiece(t, db) {
+  const h = t.hist || (t.hist = []); h.push(db); if (h.length > 600) h.shift();
+  if (h.length % 10 === 1) { const tri = [...h].sort((a, b) => a - b); t.fond = tri[Math.floor(tri.length * .2)]; }
+  if (!S || S.etape !== "jeu" || enPause || document.hidden || silenceEnCours || souffleEnCours || h.length < 30) return;
+  if (!(tableActive() || !$("#speciale").hidden) || Son.occupe()) return;
+  const exces = db - Math.max(t.fond, -75) - 12;
+  if (exces <= 0) return;
+  ajouterBruit(Math.min(1.2, exces * .04), true);
+  const j = $("#j-micro"); j.classList.remove("entendu"); void j.offsetWidth; j.classList.add("entendu");
+  if (performance.now() - dernierEntendu > 25000) { dernierEntendu = performance.now(); toast("Chut… Le vaisseau vous entend."); }
+}
 function ajouterBruit(n, discret) {
   S.bruit = Math.min(100, S.bruit + n); S.bruitMax = Math.max(S.bruitMax, S.bruit);
   if (!discret && n >= 8) { $(".bruit").classList.remove("pique"); void $(".bruit").offsetWidth; $(".bruit").classList.add("pique"); }
@@ -323,6 +339,7 @@ function majHaut() {
   $("#chrono").classList.toggle("autod", !!S.autod);
   $("#chrono").classList.toggle("urgent", (S.autod ? S.autod.restant : S.restant) < 5 * MIN);
   $("#bruit").style.width = S.bruit + "%";
+  $("#j-micro").hidden = !telAvecMicro();
   $(".bruit").classList.toggle("haut", S.bruit > 60);
   $$("#rencontres i").forEach((i, k) => i.classList.toggle("plein", k < S.rencontres));
 }
@@ -556,7 +573,7 @@ document.addEventListener("keydown", e => { if (e.key !== "Escape" || silenceEnC
 
 // ——————————————————————————————————————————————— L'interface pour les mécanismes
 function api() {
-  return { J, get S() { return S; }, effets, reveler, defausser, rendu, sauver, toast, billet, quandBilletsFinis, interphone, ajouterBruit, retirerTemps, silence, rencontre, flash, attendre,
+  return { J, get S() { return S; }, ecouterPiece, effets, reveler, defausser, rendu, sauver, toast, billet, quandBilletsFinis, interphone, ajouterBruit, retirerTemps, silence, rencontre, flash, attendre,
     instrument, tels, aDesTels, telAvecMicro, telAvecMouvement, fermerCarte, ouvrirCarte, enMain, media, chapitre, fin, aller, ecran, VIDEOS, RACINE, AD,
     echec: (msg, bruit = 6) => { Son.jouer("SFX_BIP_NON"); ajouterBruit(bruit); if (msg) toast(msg); },
     ouvrirDossier: (mode) => ouvrirDossier(mode), cine, rendreLieu: v => { S.lieu = v; rendu(); entree(v); } };
