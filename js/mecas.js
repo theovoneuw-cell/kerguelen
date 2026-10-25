@@ -307,7 +307,7 @@
     let ici = C.depart, choix = null, uv = false, uvMode = null, tUv = 0, retour = [];
     const telMvt = A.telAvecMouvement();
     const sc = scene("s-drone", `<div class="dr-vue"><div class="dr-img"></div><div class="dr-plaques"></div><div class="dr-uv"></div><div class="dr-osd"><span>DRONE D'INSPECTION · CAM 1</span><span class="dr-pos"></span><span class="dr-rec">● REC</span></div><p class="dr-impasse" hidden></p></div>
-      <div class="dr-commandes"><p class="dr-consigne">${telMvt ? "Celui qui tient le téléphone le pose à plat dans la main : penchez à gauche ou à droite pour choisir une branche, vers l'avant pour avancer, vers vous pour reculer." : "Flèches du clavier ou boutons : gauche / droite pour choisir, haut pour avancer, bas pour reculer."}</p>
+      <div class="dr-commandes"><p class="dr-consigne">${telMvt ? "Celui qui tient le téléphone le pose à plat dans la main : penchez à gauche ou à droite pour choisir une branche, vers l'avant pour avancer (sans branche choisie : tout droit), vers vous pour reculer." : "Flèches du clavier ou boutons : gauche / droite pour choisir, haut pour avancer (sans branche choisie : tout droit), bas pour reculer."}</p>
       <div class="dr-boutons"><button class="btn" data-d="gauche">←</button><button class="btn" data-d="toutdroit">↑ tout droit</button><button class="btn" data-d="droite">→</button><button class="btn btn-principal" data-d="avancer">Avancer</button><button class="btn" data-d="reculer">Reculer</button></div>
       <div class="dr-outils"><button class="btn" id="dr-uv">Lampe UV</button><form class="pioche dr-pioche"><label>Prendre</label><input inputmode="numeric" maxlength="3" placeholder="n°"><button class="btn btn-petit">OK</button></form><button class="btn" id="dr-quitter">Rappeler le drone</button></div></div>`);
     const vue = $(".dr-vue", sc), img = $(".dr-img", sc), plaques = $(".dr-plaques", sc), uvL = $(".dr-uv", sc), imp = $(".dr-impasse", sc);
@@ -345,7 +345,7 @@
       $("#dr-ramper").onclick = () => { stop(); M.ramper(A); };
     };
     const commande = d => {
-      if (d === "avancer") { if (choix) aller(choix); else A.toast("Choisissez d'abord une branche."); }
+      if (d === "avancer") { const j = C.jonctions[ici]; if (choix) aller(choix); else if (j && j.branches.toutdroit) aller("toutdroit"); else A.toast("Choisissez d'abord une branche : gauche ou droite."); }
       else if (d === "reculer") reculer();
       else { choix = d; afficher(); Son.bips([[900]], { duree: .04 }); }
     };

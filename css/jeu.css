@@ -285,7 +285,7 @@ body.plein .plein-global { display: none !important; }
 .doc-liste p, .doc-ordre p { margin: 0 0 .35em; }
 .doc-chiffre { color: var(--froid); margin-top: .8em !important; }
 .doc-planning table { border-collapse: collapse; } .doc-planning td, .doc-planning th { border: 1px solid var(--ligne-2); padding: 3px 10px; text-align: center; }
-.doc-croises .cases { color: var(--doux); margin-right: .6em; letter-spacing: .1em; }
+.doc-croises .cases { display: inline-block; min-width: 8.5em; color: var(--texte); margin-right: .6em; letter-spacing: .12em; }
 .manuscrit { font-family: var(--f-texte); font-style: italic; color: var(--accent); }
 
 /* Mécanismes */
@@ -385,6 +385,7 @@ body.plein .plein-global { display: none !important; }
 .plan-legende span { display: inline-flex; align-items: center; gap: 7px; } .plan-legende i { width: 9px; height: 9px; border-radius: 50%; } .l-ici { background: var(--accent); } .l-connu { background: #c9cfd3; } .l-devine { background: #3a444b; }
 #journal { padding-left: 0; list-style: none; max-height: min(60vh, 560px); overflow-y: auto; margin: 0 0 16px; } #journal li { padding: 12px 0; border-top: 1px solid var(--ligne); }
 #journal .j-tete { display: flex; align-items: center; justify-content: space-between; gap: 12px; } #journal li p { margin: 6px 0 0; font-size: .98rem; line-height: 1.5; color: var(--texte); max-width: 62ch; }
+.indices-rubrique { margin: 14px 0 0; font: 600 .72rem var(--f-titre); text-transform: uppercase; letter-spacing: .08em; color: var(--accent); }
 .enigme { border-top: 1px solid var(--ligne); padding: 10px 0; } .enigme ol { padding-left: 1.2em; color: #c9cfd3; }
 
 /* ——— Fin */

@@ -23,7 +23,7 @@ function rendreManuel() {
     const s = document.createElement("section"); s.className = "niveau" + (libre ? " ouvert" : "");
     s.innerHTML = `<h2>${n.titre}${n.mot ? `<span>${libre ? "ouvert" : "verrouillé"}</span>` : ""}</h2>` +
       (libre ? n.pages.map(p => `<details><summary>${p.titre}</summary><div class="page">${p.html}</div></details>`).join("")
-        : `<form class="mdp"><input placeholder="Mot de passe" autocapitalize="characters" autocomplete="off" spellcheck="false"><button>Ouvrir</button></form>`);
+        : `<p class="mdp-aide">Verrouillé. Il faut le mot de passe de ce niveau (on dit aussi « habilitation »), écrit ou dit quelque part à bord : toujours un nom d'oiseau.</p><form class="mdp"><input placeholder="Mot de passe" autocapitalize="characters" autocomplete="off" spellcheck="false"><button>Ouvrir</button></form>`);
     z.appendChild(s);
     const f = $("form", s);
     if (f) f.onsubmit = e => { e.preventDefault(); const v = norme($("input", f).value); if (v === n.mot) { ouverts.push(i); try { localStorage.setItem("krg-manuel", JSON.stringify(ouverts)); } catch (_) {} envoyer({ t: "manuel", niveau: i }); rendreManuel(); const d = $$(".niveau")[i].querySelector("details"); if (d) d.open = true; } else { $("input", f).value = ""; $("input", f).placeholder = "Refusé"; vibrer(80); } };
@@ -52,8 +52,16 @@ if (code && !seul) {
     message: recevoir
   });
 }
+// Les niveaux ouverts valent pour une partie : une nouvelle partie à l'écran les referme, et l'écran apprend ceux déjà ouverts.
+function partieEcran(id) {
+  if (!id) return;
+  const avant = localStorage.getItem("krg-manuel-partie");
+  if (avant && avant !== String(id)) { ouverts = []; try { localStorage.setItem("krg-manuel", "[]"); } catch (_) {} rendreManuel(); }
+  try { localStorage.setItem("krg-manuel-partie", String(id)); } catch (_) {}
+  envoyer({ t: "manuels", niveaux: ouverts });
+}
 function recevoir(d) {
-  if (d.t === "etat") { detecteurActif = d.detecteur; majDetEtat(); }
+  if (d.t === "etat") { detecteurActif = d.detecteur; majDetEtat(); partieEcran(d.partie); }
   if (d.t === "det") { donneesDet = d; detecteurActif = d.actif; majDetEtat(); }
   if (d.t === "instrument") instrument(d);
 }
@@ -208,5 +216,6 @@ function bip(f = 1180, d = .07) { if (!ctx || face) return; const t = ctx.curren
   dessin();
 })();
 
-// Mode sans écran relié : le manuel seul
+// Mode sans écran relié : le manuel seul (même navigateur que le jeu, qui lit krg-manuel directement)
+if (seul) { try { const p = JSON.parse(localStorage.getItem("kerguelen-partie-v1") || "null"); if (p && p.id) partieEcran(p.id); } catch (_) {} }
 if (seul || !code) { $("#debut").classList.remove("on"); choisirRole("manuel"); $("#onglets").hidden = true; $("#liaison").hidden = true; }

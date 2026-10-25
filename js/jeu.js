@@ -19,11 +19,11 @@ const MIN = 60000;
 // ——————————————————————————————————————————————— État
 let S = null;
 function neuf(noms) {
-  return { noms, chap: 0, lieu: "sas", precedent: null, ouverts: [], main: [], defausse: [], flags: {}, restant: 90 * MIN, autod: null,
+  return { id: Date.now(), noms, chap: 0, lieu: "sas", precedent: null, ouverts: [], main: [], defausse: [], flags: {}, restant: 90 * MIN, autod: null,
     bruit: 0, bruitMax: 0, rencontres: 0, indices: {}, journal: [], bete: { pos: "condB", active: false, prochain: 30000 }, etape: "jeu", nouv: [], annonces: {}, vus: {} };
 }
 const sauver = () => { if (!S) return; try { localStorage.setItem(CLE_SAUVE, JSON.stringify(S)); } catch (_) {} };
-const charger = () => { try { return JSON.parse(localStorage.getItem(CLE_SAUVE)); } catch (_) { return null; } };
+const charger = () => { try { const p = JSON.parse(localStorage.getItem(CLE_SAUVE)); if (p && !p.id) p.id = Date.now(); return p; } catch (_) { return null; } };
 const carte = n => J.CARTES[n];
 const enMain = n => S.main.includes(+n);
 const lieu = id => J.LIEUX[id];
@@ -76,13 +76,14 @@ function recevoir(id, d) {
     case "niveau": t.db = d.db; t.depasse = d.depasse; ecouterPiece(t, d.db); if ($("#essai-micro") && !$("#essai-micro").hidden) $("#jauge-micro").style.width = Math.max(0, Math.min(100, (d.db + 80) * 1.4)) + "%"; if (silenceEnCours && d.depasse && !Son.occupe()) silenceEnCours.bruit(); break;
     case "face": t.face = !!d.bas; break;
     case "manuel": if (S) { S.flags["manuel" + d.niveau] = true; if (d.niveau >= 2) S.flags.fulmar = true; sauver(); } break;
+    case "manuels": if (S) { (d.niveaux || []).forEach(i => { S.flags["manuel" + i] = true; if (i >= 2) S.flags.fulmar = true; }); sauver(); } break;
     default: Mecas.message && Mecas.message(id, d);
   }
 }
 const telsDet = () => [...tels.entries()].filter(([, t]) => t.role === "detecteur" || t.role === "deux");
 function envoyerEtat(id) {
   if (!hote) return;
-  const m = { t: "etat", detecteur: !!(S && S.flags.detecteur), chap: S ? S.chap : -1, noms: S ? S.noms : [] };
+  const m = { t: "etat", detecteur: !!(S && S.flags.detecteur), chap: S ? S.chap : -1, noms: S ? S.noms : [], partie: S ? S.id || null : null };
   if (id) hote.envoyer(id, m); else hote.diffuser(m);
 }
 function instrument(nom, params = {}, cible = null) {
@@ -97,7 +98,7 @@ const telAvecMicro = () => [...tels.values()].some(t => t.micro);
 const telAvecMouvement = () => [...tels.entries()].find(([, t]) => t.mouvement);
 
 // ——————————————————————————————————————————————— Temps
-let dernier = performance.now(), enPause = false;
+let dernier = performance.now(), enPause = false, dernierAvisDet = 0;
 const tableActive = () => $("#table").classList.contains("actif");
 function fmt(ms) { ms = Math.max(0, ms); const m = Math.floor(ms / MIN), s = Math.floor(ms % MIN / 1000); return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`; }
 setInterval(() => {
@@ -121,7 +122,11 @@ setInterval(() => {
   S.bruit = Math.max(0, S.bruit - dt / 1000 * 1.4);
   // Le détecteur face visible fait du bruit quand la bête est proche.
   const dist = distanceBete();
-  if (S.flags.detecteur && S.bete.active && dist <= 1 && detecteurAudible()) ajouterBruit(dt / 1000 * 3, true);
+  // Plafonné à 40 : à lui seul, il ne peut pas faire venir la bête à coup sûr. On prévient les joueurs une fois de temps en temps.
+  if (S.flags.detecteur && S.bete.active && dist <= 1 && detecteurAudible() && !silenceEnCours) {
+    if (S.bruit < 40) ajouterBruit(dt / 1000 * 1.6, true);
+    if (performance.now() - dernierAvisDet > 45000) { dernierAvisDet = performance.now(); toast("Le détecteur bipe et fait du bruit : face contre la table, ou un doigt sur son écran.", 4200); }
+  }
   // La bête se déplace.
   if (S.bete.active && !silenceEnCours && tableActive() && !rencontreEnCours) {
     if (S.bete.calme > 0) S.bete.calme -= dt;
@@ -820,12 +825,34 @@ $("#b-journal").onclick = () => {
   $$("button[data-c]", ol).forEach(b => b.onclick = () => interphone([b.dataset.c], { journal: false }));
   $("#m-journal").hidden = false; ol.lastElementChild && ol.lastElementChild.scrollIntoView({ block: "end" });
 };
-function enigmesOuvertes() { return J.ENIGMES.filter(e => enMain(e.si) && !(e.resolu && S.flags[e.resolu])); }
+// Les indices suivent l'histoire (voir ENIGMES dans donnees-source.cjs) : on ne montre que les étapes du chapitre en cours
+// qu'on peut déjà résoudre. En tête, ce qui fait avancer ; ensuite, au plus deux à-côtés.
+const possede = n => S.main.includes(+n) || S.defausse.includes(+n);
+// Les niveaux du manuel ouverts dans une fenêtre de ce Mac (jeu sans téléphone) ne passent pas par la liaison : on les lit ici.
+function drapeau(f) {
+  if (S.flags[f]) return true;
+  const m = /^manuel(\d)$/.exec(f) || (f === "fulmar" && [, "2"]);
+  if (!m) return false;
+  try { return JSON.parse(localStorage.getItem("krg-manuel") || "[]").includes(+m[1]) && localStorage.getItem("krg-manuel-partie") === String(S.id); } catch (_) { return false; }
+}
+function enigmeOuverte(e) {
+  if (e.chap !== undefined && e.chap !== S.chap) return false;
+  if (e.si !== undefined && ![].concat(e.si).some(enMain)) return false;
+  if ((e.apres || []).some(f => !drapeau(f))) return false;
+  return !(e.resolu && drapeau(e.resolu)) && !(e.resoluCarte && possede(e.resoluCarte));
+}
+function enigmesOuvertes() { const l = J.ENIGMES.filter(enigmeOuverte); return [...l.filter(e => e.principal), ...l.filter(e => !e.principal).slice(0, 2)]; }
+// Où reste-t-il des numéros à trouver ? Seulement dans les lieux du chapitre déjà ouverts.
+function lieuxAFouiller() {
+  return Object.entries(J.NOMBRES).filter(([v, l]) => S.ouverts.includes(v) && (!chap().lieux || chap().lieux.includes(v)) && l.some(([n, , , si]) => (!si || S.flags[si]) && !possede(n))).map(([v]) => lieu(v).nom.replace(/^L[ae] /, "la ").replace(/^L'/, "l'"));
+}
 function ouvrirIndices() {
   const l = $("#indices"); l.innerHTML = "";
-  const liste = enigmesOuvertes();
-  if (!liste.length) l.innerHTML = `<p class="petit">Rien ne vous bloque pour l'instant. Fouillez les lieux à la lampe, et relisez l'objectif en haut de l'écran.</p>`;
-  liste.forEach(e => {
+  const liste = enigmesOuvertes(), reste = lieuxAFouiller();
+  if (!liste.some(e => e.principal)) l.insertAdjacentHTML("beforeend", `<div class="enigme"><h3>Pour avancer</h3><p class="petit">${reste.length ? `Il reste des numéros à trouver ici : <b>${reste.join(", ")}</b>. Promenez la lampe partout, jusque dans les coins et au ras du sol.` : "Relisez l'objectif en haut de l'écran, et essayez les lieux que vous n'avez pas encore visités."}</p></div>`);
+  liste.forEach((e, i) => {
+    if (i === 0 && e.principal) l.insertAdjacentHTML("beforeend", `<p class="indices-rubrique">Pour avancer</p>`);
+    if (!e.principal && (i === 0 || liste[i - 1].principal)) l.insertAdjacentHTML("beforeend", `<p class="indices-rubrique">Aussi en cours</p>`);
     const k = S.indices[e.id] || 0, d = document.createElement("div"); d.className = "enigme";
     d.innerHTML = `<h3>${e.titre}</h3>` + (k ? `<ol>${e.indices.slice(0, k).map(t => `<li>${t}</li>`).join("")}</ol>` : "");
     if (k < e.indices.length) { const b = document.createElement("button"); b.className = "btn btn-petit"; b.textContent = k === e.indices.length - 1 ? "Voir la solution" : (k ? "Un autre indice" : "Un indice"); b.onclick = () => { S.indices[e.id] = k + 1; retirerTemps(2); sauver(); ouvrirIndices(); }; d.appendChild(b); }

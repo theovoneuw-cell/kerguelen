@@ -74,6 +74,10 @@ details[open] > summary::before { transform: rotate(45deg); }
 .btn-uv { margin-top: 10px; background: #2a1f4a; border: 1px solid #6b55c8; color: #d7c8ff; padding: 12px 20px; border-radius: 0; font-weight: 600; }
 .ins-silence .sil-titre { font-family: var(--f-titre); font-size: 3rem; margin: 0; }
 body.en-silence { background: #000; }
+/* Un doigt posé sur l'écran étouffe le détecteur : rien ne doit se sélectionner ni ouvrir de menu à l'appui long. */
+body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+input, textarea { -webkit-user-select: text; user-select: text; }
+.mdp-aide { margin: 0 0 8px; color: var(--doux); font-size: .9rem; }
 .sil-det { margin: 18px auto 0; max-width: 22em; color: var(--accent); }
 
 .camera { position: fixed; inset: 0; z-index: 20; background: #000; }
