@@ -161,9 +161,9 @@
         const phrase = norme(montage.map(x => x.w).join(" ").replace(/' /g, "'"));
         const ok = phrase === "ilan varek officier scientifique j'autorise l'acces quarante-sept";
         if (ok && !S.flags.badgeCommandant) { A.toast("La voix est bonne. Il manque la première autorisation : un badge d'officier."); return; }
-        if (!ok) { await A.interphone(["VIGIE_23"], { journal: false }); A.ajouterBruit(5); return; }
+        if (!ok) { await A.interphone(["VIGIE_23"]); A.ajouterBruit(5); return; }
         S.flags.chambre = true; A.fermerCarte(); Son.jouer("SFX_PORTE"); A.sauver();
-        await A.interphone(["VAREK_MONTAGE", "VIGIE_22"], { journal: false });
+        await A.interphone(["VAREK_MONTAGE", "VIGIE_22"]);
         A.aller("vigie");
       };
     },
@@ -176,7 +176,7 @@
       const sortie = $(".t-sortie", el), champ = $("input", el);
       const ecrire = (t, cls = "") => { const p = document.createElement("pre"); p.className = cls; p.textContent = t; sortie.appendChild(p); sortie.scrollTop = 1e6; };
       ecrire("VIGIE — intelligence de bord du KERGUELEN\nTapez AIDE pour la liste des commandes.");
-      if (!S.vus.vigieBonjour) { S.vus.vigieBonjour = true; A.interphone(["VIGIE_14"], { journal: false }); }
+      if (!S.vus.vigieBonjour) { S.vus.vigieBonjour = true; A.interphone(["VIGIE_14"]); }
       setTimeout(() => champ.focus(), 100);
       $("form", el).onsubmit = async e => {
         e.preventDefault(); const brut = champ.value.trim(); champ.value = ""; if (!brut) return;
@@ -198,7 +198,7 @@
         // La lumière tombe au troisième ordre
         if (S.vus.commandes === 3 && !S.flags.silenceVigie) {
           S.flags.silenceVigie = true; A.sauver();
-          await A.attendre(700); document.body.classList.add("panne"); await A.interphone(["VIGIE_13"], { journal: false });
+          await A.attendre(700); document.body.classList.add("panne"); await A.interphone(["VIGIE_13"]);
           const avant = S.bete.pos; S.bete.pos = "passerelle";
           const ok = await A.silence({ duree: 22000 });
           document.body.classList.remove("panne");
@@ -217,7 +217,7 @@
       z.appendChild(el);
       $("button", el).onclick = async () => {
         const v = ($("input:checked", el) || {}).value; if (!v) return;
-        A.fermerCarte(); Son.jouer("SFX_ALARME"); await A.interphone(["VIGIE_26"], { journal: false });
+        A.fermerCarte(); Son.jouer("SFX_ALARME"); await A.interphone(["VIGIE_26"]);
         S.bete.fixe = v; S.bete.pos = v;
         if (v === "sport") { S.flags.leurre = true; A.billet("Au détecteur, le point quitte la coursive D, file vers l'avant, monte d'un pont… et s'arrête tout au fond, à la salle de sport. Il ne bouge plus. Elle écoute l'alarme."); }
         else if (v === "machines") A.billet("Le point descend vers les machines. À l'interphone, Jo, très bas : « Pas ici… pas ici, bon sang. » Puis plus rien. Le point reste là, juste à côté de la coursive D.");
@@ -410,7 +410,7 @@
     await A.attendre(1800);
     const sc = scene("s-fuite", `<div class="fu-media"></div><div class="fu-choix" hidden><p class="fu-titre">FUYEZ</p><div class="fu-boutons"><button class="btn" data-s="porte">La porte du labo</button><button class="btn" data-s="conduit">Le conduit</button></div><div class="fu-temps"><i></i></div></div>`);
     $(".fu-media", sc).appendChild(A.media(null, { image: "l-labo" }));
-    await A.interphone(["VAREK_10"], { journal: false });
+    await A.interphone(["VAREK_10"]);
     A.flash("#fff"); document.body.classList.add("secousse");
     $(".fu-media", sc).innerHTML = ""; $(".fu-media", sc).appendChild(A.media(A.VIDEOS.has("v-labo") ? "v-labo" : null, { image: "b-tete" }));
     Son.jouer("BETE_ATTAQUE"); sc.classList.add("strobo");
@@ -432,7 +432,7 @@
   M.accusationJuste = async (A) => {
     const S = A.S;
     Son.jouer("SFX_BIP_OK");
-    await A.interphone(["VIGIE_16"], { journal: false });
+    await A.interphone(["VIGIE_16"]);
     await A.attendre(1200);
     await A.interphone(["BRANDT_08"]);
     S.autod = { restant: 15 * MIN, ecoule: 0 };
@@ -465,7 +465,7 @@
     const sc2 = scene("s-ejection", `<div class="ej-img"></div><p class="ej-texte">Elle s'est figée contre le sas extérieur, la tête tournée vers le bruit des moteurs. Maintenant.</p><button class="btn btn-danger ej-bouton">Maintenir : éjection d'urgence</button>`);
     $(".ej-img", sc2).style.backgroundImage = `url('${A.RACINE}img/l-chaloupe.jpg')`;
     await new Promise(r => tenir($(".ej-bouton", sc2), 5000, r, false));
-    await A.interphone(["VIGIE_27"], { journal: false });
+    await A.interphone(["VIGIE_27"]);
     Son.jouer("BETE_CRI"); A.flash("#fff");
     $(".ej-texte", sc2).textContent = "Le sas s'ouvre. L'air part d'un coup, et elle avec, dans un dernier cri que le vide avale.";
     await A.attendre(4000); finScene();
@@ -475,7 +475,7 @@
   // ——— Le message de la Compagnie, et le réacteur
   M.override = async (A) => {
     const S = A.S;
-    await A.interphone(["VIGIE_18"], { journal: false });
+    await A.interphone(["VIGIE_18"]);
     await A.interphone(["BRANDT_09"]);
     M.reacteur(A);
   };
@@ -516,7 +516,7 @@
       if (fini) return; fini = true; clearInterval(t);
       await A.interphone(["BRANDT_15"]); Son.jouer("BETE_CRI"); await A.attendre(800);
       finScene(); S.flags.reacteurOk = true; A.sauver();
-      await A.interphone(["VIGIE_28"], { journal: false });
+      await A.interphone(["VIGIE_28"]);
       if (S.flags.lancee) { A.fin("quarantaine"); return; }
       S.autod.restant = Math.min(S.autod.restant, 60000);
       A.billet("<b>Soixante secondes.</b> Le réacteur va sauter. Lancez la chaloupe.");

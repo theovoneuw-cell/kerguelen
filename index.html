@@ -73,7 +73,7 @@
       <ul class="consignes">
         <li><b>Tout le monde face au grand écran.</b> C'est le vaisseau : les lieux, les objets, les voix, les cinématiques. On le regarde ensemble.</li>
         <li><b>Lumière éteinte</b>, <span class="seul-son">le son fort ou un casque partagé.</span><span class="seul-ad">en version audiodescription, tous les sons sont décrits à l'écran, entre crochets.</span></li>
-        <li><b>Un ou deux téléphones</b>, chargés, luminosité au maximum. Ils serviront de manuel, de détecteur et d'instruments : micro, pouce, inclinaison, caméra.</li>
+        <li><b>Un téléphone à deux joueurs, deux à trois joueurs</b>, chargés, luminosité au maximum. Ils serviront de manuel, de détecteur et d'instruments : micro, pouce, inclinaison, caméra.</li>
         <li><b>Une souris</b> pour celui qui fouille : elle sert de lampe.</li>
       </ul>
       <button class="btn btn-principal" data-suite="2">Suivant</button>
@@ -84,12 +84,12 @@
       <div class="tel-grille">
         <div class="tel-qr"><div id="qr"></div><p class="tel-url" id="url-tel"></p></div>
         <div class="tel-texte">
-          <p>Scannez ce code avec chaque téléphone. Chacun choisit son rôle :</p>
+          <p><b>À deux joueurs, un seul téléphone scanne ce code</b> : il sera Manuel et Détecteur à la fois. <b>À trois, deux téléphones le scannent</b> : l'un prend le Manuel, l'autre le Détecteur.</p>
           <dl class="roles">
             <div><dt>Le Manuel de bord</dt><dd>Les procédures, les plans, les tableaux. Celui qui l'a lit à voix haute ; il ne montre pas son écran.</dd></div>
             <div><dt>Le Détecteur de mouvement</dt><dd>Il bipe quand la bête approche. Mais ses bips font du bruit : pour le faire taire, on le pose face contre la table.</dd></div>
           </dl>
-          <p class="petit">Avec un seul téléphone, il a les deux. Autorisez le <b>micro</b> et les <b>mouvements</b> quand on vous le demande : le vaisseau doit entendre votre pièce. Rien n'est enregistré ni envoyé.</p>
+          <p class="petit">Autorisez le <b>micro</b> et les <b>mouvements</b> quand on vous le demande : pendant les silences, le vaisseau doit entendre votre pièce. Rien n'est enregistré ni envoyé.</p>
           <ul class="liste-tels" id="liste-tels"><li class="vide">Aucun téléphone pour l'instant.</li></ul>
           <div class="essai-micro" id="essai-micro" hidden>
             <p><b>Essai du silence.</b> Faites du bruit, puis taisez-vous : la jauge doit retomber.</p>
@@ -108,8 +108,8 @@
         <div class="regle"><span class="regle-ico ico-num">17</span><p><b>Les numéros cachés.</b> Des numéros sont peints dans le décor. Tapez-en un dans <i>Prendre</i> pour ramasser la carte. Fouiller au hasard fait du bruit.</p></div>
         <div class="regle"><span class="regle-ico ico-plus">+</span><p><b>Combiner.</b> Glissez une carte sur une autre pour les utiliser ensemble. Touchez une carte pour l'ouvrir : certaines se manipulent.</p></div>
         <div class="regle"><span class="regle-ico ico-dossier"></span><p><b>L'enquête.</b> Le <i>Dossier</i> rassemble les suspects et les preuves trouvées. À la fin, il faudra désigner un coupable devant VIGIE.</p></div>
-        <div class="regle"><span class="regle-ico ico-bruit"></span><p><b>Le bruit.</b> La bête est aveugle et chasse au son. Chaque erreur fait du bruit et l'attire, <b>et le téléphone écoute la pièce pendant toute la partie</b> : parlez bas. Surveillez le détecteur avant d'entrer quelque part.</p></div>
-        <div class="regle"><span class="regle-ico ico-silence"></span><p><b>Le silence.</b> Quand elle passe tout près, l'écran s'éteint : <b>plus un bruit dans la pièce</b>. Le micro écoute. Un rire, un mot, et elle vous a trouvés.</p></div>
+        <div class="regle"><span class="regle-ico ico-bruit"></span><p><b>Le bruit.</b> La bête est aveugle et chasse au son. Chaque erreur fait du bruit et l'attire. <b>Entre les silences, parlez librement</b> : réfléchir à voix haute fait partie du jeu. Surveillez le détecteur avant d'entrer quelque part.</p></div>
+        <div class="regle"><span class="regle-ico ico-silence"></span><p><b>Le silence.</b> Quand elle approche, l'écran annonce <b>SILENCE</b> et compte trois secondes : <b>taisez-vous jusqu'à ce qu'elle s'éloigne</b>. Le micro n'écoute qu'à ce moment-là. Au premier bruit elle s'arrête et tend l'oreille ; au deuxième, elle vous a trouvés.</p></div>
       </div>
       <p class="petit">Le temps presse : 90 minutes avant le départ du vaisseau vers la Terre. Bloqués ? <i>Indices</i> en donne trois par énigme, du plus discret à la solution ; chacun coûte deux minutes. Trois rencontres avec la bête, et c'est fini.</p>
       <div class="accueil-nav"><button class="btn" data-suite="2">Retour</button><button class="btn btn-principal" data-suite="4">Suivant</button></div>
@@ -147,7 +147,7 @@
     <div class="chapitre"><span class="chap-num" id="chap-num"></span><span class="chap-titre" id="chap-titre"></span></div>
     <p class="objectif" id="objectif"></p>
     <div class="jauges">
-      <div class="bruit" title="Bruit"><span class="j-micro" id="j-micro" title="Le téléphone écoute la pièce" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span><span class="j-nom">Bruit</span><div class="bruit-barre"><i id="bruit"></i></div></div>
+      <div class="bruit" title="Bruit"><span class="j-nom">Bruit</span><div class="bruit-barre"><i id="bruit"></i></div></div>
       <div class="rencontres" id="rencontres" title="Rencontres avec la bête"><i></i><i></i><i></i></div>
       <div class="chrono" id="chrono" title="Temps avant le départ vers la Terre">90:00</div>
     </div>
@@ -218,7 +218,7 @@
 <div class="modale" id="m-billet" hidden><div class="modale-fond"></div><div class="billet"><div class="billet-texte" id="billet-texte"></div><button class="btn btn-principal" id="billet-ok">Continuer</button></div></div>
 <div class="modale" id="m-dossier" hidden><div class="modale-fond" data-fermer></div><div class="panneau large" id="dossier"></div></div>
 <div class="modale" id="m-plan" hidden><div class="modale-fond" data-fermer></div><div class="panneau large"><h2>Plan du Kerguelen</h2><div id="plan"></div><p class="petit">La bête n'apparaît pas sur le plan : seul le détecteur la voit.</p><button class="btn" data-fermer>Fermer</button></div></div>
-<div class="modale" id="m-journal" hidden><div class="modale-fond" data-fermer></div><div class="panneau"><h2>Journal d'interphone</h2><p class="petit">Les messages reçus, pour les réécouter.</p><ol id="journal"></ol><button class="btn" data-fermer>Fermer</button></div></div>
+<div class="modale" id="m-journal" hidden><div class="modale-fond" data-fermer></div><div class="panneau"><h2>Journal d'interphone</h2><p class="petit">Tous les messages reçus, à relire ou à réécouter.</p><ol id="journal"></ol><button class="btn" data-fermer>Fermer</button></div></div>
 <div class="modale" id="m-indices" hidden><div class="modale-fond" data-fermer></div><div class="panneau"><h2>Indices</h2><p class="petit">Chaque indice coûte deux minutes.</p><div id="indices"></div><button class="btn" data-fermer>Fermer</button></div></div>
 <div class="modale" id="m-aide" hidden><div class="modale-fond" data-fermer></div><div class="panneau large" id="aide"></div></div>
 <div class="modale" id="m-menu" hidden><div class="modale-fond" data-fermer></div><div class="panneau">
@@ -233,7 +233,7 @@
 <button class="btn plein-global b-plein" title="Plein écran (F)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><span>Plein écran</span></button>
 
 <!-- Silence et rencontres -->
-<div id="silence" class="silence" hidden><p class="silence-titre">Elle est là.</p><p class="silence-sous">Plus un bruit.</p><div class="silence-jauge"><i id="silence-jauge"></i></div><p class="silence-micro" id="silence-micro"></p></div>
+<div id="silence" class="silence" hidden><p class="silence-titre">Silence</p><p class="silence-sous" id="silence-sous">Elle approche.</p><div class="silence-jauge"><i id="silence-jauge"></i></div><p class="silence-micro" id="silence-micro"></p></div>
 <div id="rencontre" class="rencontre" hidden></div>
 <div id="flash" class="flash"></div>
 

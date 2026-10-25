@@ -45,9 +45,9 @@ input:focus, select:focus, button:focus-visible, a:focus-visible { outline: 1px 
 select { font: inherit; color: var(--texte); background: #03060a; border: 1px solid var(--ligne-2); border-radius: 0; padding: .45em; }
 
 /* ——— Étalonnage commun des images (lieux, cinématiques, cartes, portraits) */
-.titre-fond, .media video, .media-img, .scene-img, .c-img, .mi-img, .cg-img, .f-photo { filter: var(--etalon-filtre); }
+.titre-fond, .media-img, .scene-img, .c-img, .mi-img, .cg-img, .f-photo { filter: var(--etalon-filtre); }
 .etalon, .titre-etalon { position: absolute; inset: 0; background: var(--etalon-teinte); mix-blend-mode: color; pointer-events: none; }
-.media::after, .c-img::after, .cg-visuel::after { content: ""; position: absolute; inset: 0; background: var(--etalon-teinte); mix-blend-mode: color; pointer-events: none; }
+.media:not(.media-video)::after, .c-img::after, .cg-visuel::after { content: ""; position: absolute; inset: 0; background: var(--etalon-teinte); mix-blend-mode: color; pointer-events: none; }
 .c-img { position: relative; }
 
 /* ——— Préchargement : le vaisseau se rallume. Il suit le vrai chargement et ne bloque jamais (sortie forcée à 8 s, même sans script). */
@@ -144,7 +144,7 @@ body.pret #titre .titre-contenu { --ty: -50%; }
 .media video, .media-img { width: 100%; height: 100%; object-fit: cover; background: center/cover no-repeat; }
 .media-img { animation: travelling 16s ease-out forwards; }
 /* Les plans vidéo continuent d'avancer doucement après leur dernière image : rien ne se fige pendant le texte. */
-.cine-media .media video { animation: travelling 28s linear forwards; }
+.cine-media .media video { animation: travelling 28s linear forwards; will-change: transform; }
 @keyframes travelling { from { transform: scale(1.02); } to { transform: scale(1.12); } }
 .cine-media::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,.75) 100%); pointer-events: none; }
 .cine-texte { position: absolute; left: 50%; bottom: 13vh; transform: translateX(-50%); width: min(780px, 90vw); text-align: center; font-size: 1.35rem; line-height: 1.55; opacity: 0; transition: opacity .9s; text-shadow: 0 1px 12px #000; }
@@ -174,8 +174,6 @@ body.pret #titre .titre-contenu { --ty: -50%; }
 .objectif::before { content: "Objectif — "; color: var(--doux); }
 .jauges { display: flex; align-items: center; gap: 22px; }
 .bruit { display: flex; align-items: center; gap: 8px; font-size: .82rem; color: var(--doux); }
-.j-micro { display: inline-grid; place-items: center; color: var(--doux); } .j-micro svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; }
-.j-micro.entendu { animation: entendu 1.2s ease-out; } @keyframes entendu { 0%, 30% { color: var(--danger); transform: scale(1.25); } }
 .bruit-barre { width: 120px; height: 6px; background: #05070a; border: 1px solid var(--ligne-2); position: relative; }
 .bruit-barre i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--doux); transition: width .25s, background .3s; }
 .bruit.haut .bruit-barre i { background: var(--danger); }
@@ -385,7 +383,8 @@ body.plein .plein-global { display: none !important; }
 @keyframes halo { from { transform: scale(.6); opacity: .8; } to { transform: scale(1.5); opacity: 0; } }
 .plan-legende { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; font-size: .85rem; color: var(--doux); margin: 10px 0 0; }
 .plan-legende span { display: inline-flex; align-items: center; gap: 7px; } .plan-legende i { width: 9px; height: 9px; border-radius: 50%; } .l-ici { background: var(--accent); } .l-connu { background: #c9cfd3; } .l-devine { background: #3a444b; }
-#journal { padding-left: 0; list-style: none; } #journal li { padding: 8px 0; border-top: 1px solid var(--ligne); font-size: .92rem; }
+#journal { padding-left: 0; list-style: none; max-height: min(60vh, 560px); overflow-y: auto; margin: 0 0 16px; } #journal li { padding: 12px 0; border-top: 1px solid var(--ligne); }
+#journal .j-tete { display: flex; align-items: center; justify-content: space-between; gap: 12px; } #journal li p { margin: 6px 0 0; font-size: .98rem; line-height: 1.5; color: var(--texte); max-width: 62ch; }
 .enigme { border-top: 1px solid var(--ligne); padding: 10px 0; } .enigme ol { padding-left: 1.2em; color: #c9cfd3; }
 
 /* ——— Fin */
@@ -415,6 +414,9 @@ body.plein .plein-global { display: none !important; }
 .silence-sous { font-size: 1.4rem; color: var(--doux); }
 .silence-jauge { width: 320px; height: 2px; background: #15191c; margin: 24px auto 10px; } .silence-jauge i { display: block; height: 100%; width: 0; background: var(--doux); }
 .silence-micro { color: var(--pale); font-size: .85rem; }
+.silence.prepa .silence-sous { color: var(--accent); font-variant-numeric: tabular-nums; }
+.silence.alerte .silence-sous { color: var(--danger); }
+.silence.alerte .silence-titre { animation: alerte-silence .9s ease-out; } @keyframes alerte-silence { 0% { color: var(--danger); transform: scale(1.06); } }
 .rencontre { position: fixed; inset: 0; z-index: 80; background: #000; }
 .rencontre .media-img { animation: rugit 1.6s ease-out forwards; }
 @keyframes rugit { from { transform: scale(1.5); filter: brightness(2); } 20% { filter: brightness(1); } to { transform: scale(1.05); } }

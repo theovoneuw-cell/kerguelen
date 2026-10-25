@@ -183,11 +183,11 @@
   }
   function note(k) { if (!AD && ctx && !coupe) { occuper(700); ton(NOTES[k - 1], .6, { gain: .2, type: "triangle", attaque: .03 }); ton(NOTES[k - 1] * 2, .6, { gain: .06 }); } }
 
-  // Silence : tout baisse, sauf ce que la bête fait.
+  // Silence : musique, ambiance et voix se taisent ; il ne reste que la bête, bas, pour que le micro du téléphone ne l'entende pas.
   function silence(on) {
     if (AD || !ctx) return;
     const t = ctx.currentTime;
-    [busMus, busAmb].forEach(b => { b.gain.cancelScheduledValues(t); b.gain.linearRampToValueAtTime(on ? .04 : (b === busMus ? .5 : .7), t + (on ? .4 : 2)); });
+    [[busMus, .5], [busAmb, .7], [busVoix, 1], [busSfx, 1]].forEach(([b, normal]) => { b.gain.cancelScheduledValues(t); b.gain.setValueAtTime(b.gain.value, t); b.gain.linearRampToValueAtTime(on ? (b === busSfx ? .3 : 0) : normal, t + (on ? .4 : 2)); });
   }
   function couper(v) { coupe = v; if (maitre) maitre.gain.value = v ? 0 : 1; }
   function volumeMusique(v) { if (busMus) busMus.gain.value = v; }

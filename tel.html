@@ -24,7 +24,7 @@
       <button data-role="detecteur"><b>Détecteur de mouvement</b><span>Il bipe quand la bête approche.</span></button>
       <button data-role="deux"><b>Les deux</b><span>Un seul téléphone pour l'équipe.</span></button>
     </div>
-    <p class="note">On va vous demander le <b>micro</b> (le jeu mesure le bruit de la pièce : rien n'est enregistré ni envoyé) et les <b>mouvements</b> du téléphone. Gardez l'écran allumé.</p>
+    <p class="note">On va vous demander le <b>micro</b> (pendant les silences, le jeu mesure le bruit de la pièce : rien n'est enregistré ni envoyé) et les <b>mouvements</b> du téléphone. Gardez l'écran allumé.</p>
     <p id="debut-err" class="err" role="alert"></p>
   </section>
 
@@ -38,7 +38,7 @@
 
   <section id="detecteur" class="vue">
     <div class="det-boite"><canvas id="radar" width="640" height="640"></canvas><p id="det-etat" class="det-etat">Pas de batterie.</p></div>
-    <p class="note">Le centre, c'est vous ; le haut, c'est l'avant du vaisseau. <b>Posé face contre la table, il se tait.</b></p>
+    <p class="note">Le centre, c'est vous ; le haut, c'est l'avant du vaisseau. <b>Pour le faire taire : posez-le face contre la table, ou gardez un doigt sur l'écran.</b></p>
   </section>
 
   <!-- Instruments demandés par l'écran -->
@@ -64,6 +64,7 @@
     <div class="ins-silence" hidden>
       <p class="sil-titre">Silence.</p>
       <div class="jauge"><i id="silence-niveau"></i><span id="silence-seuil" class="seuil"></span></div>
+      <p id="sil-det" class="sil-det" hidden>Le détecteur bipe ? Gardez le doigt sur l'écran, ou posez le téléphone face contre la table.</p>
     </div>
   </section>
 

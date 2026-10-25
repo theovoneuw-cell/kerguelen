@@ -73,7 +73,7 @@ function recevoir(id, d) {
   switch (d.t) {
     case "role": t.role = d.role; majTels(); envoyerEtat(id); break;
     case "perm": t.micro = !!d.micro; t.mouvement = !!d.mouvement; majTels(); break;
-    case "niveau": t.db = d.db; t.depasse = d.depasse; ecouterPiece(t, d.db); if ($("#essai-micro") && !$("#essai-micro").hidden) $("#jauge-micro").style.width = Math.max(0, Math.min(100, (d.db + 80) * 1.4)) + "%"; if (silenceEnCours && d.depasse) silenceEnCours.bruit(); break;
+    case "niveau": t.db = d.db; t.depasse = d.depasse; ecouterPiece(t, d.db); if ($("#essai-micro") && !$("#essai-micro").hidden) $("#jauge-micro").style.width = Math.max(0, Math.min(100, (d.db + 80) * 1.4)) + "%"; if (silenceEnCours && d.depasse && !Son.occupe()) silenceEnCours.bruit(); break;
     case "face": t.face = !!d.bas; break;
     case "manuel": if (S) { S.flags["manuel" + d.niveau] = true; if (d.niveau >= 2) S.flags.fulmar = true; sauver(); } break;
     default: Mecas.message && Mecas.message(id, d);
@@ -107,14 +107,14 @@ setInterval(() => {
   if (!actif) return;
   if (S.autod) {
     S.autod.restant -= dt; S.autod.ecoule += dt;
-    if (!S.autod.dix && S.autod.restant <= 10 * MIN) { S.autod.dix = true; Son.voix("VIGIE_24"); }
-    if (!S.autod.cinq && S.autod.restant <= 5 * MIN) { S.autod.cinq = true; Son.voix("VIGIE_25"); }
+    if (!S.autod.dix && S.autod.restant <= 10 * MIN) { S.autod.dix = true; dire("VIGIE_24"); }
+    if (!S.autod.cinq && S.autod.restant <= 5 * MIN) { S.autod.cinq = true; dire("VIGIE_25"); }
     if (!S.autod.override && S.autod.ecoule >= 11 * MIN) { S.autod.override = true; Mecas.override(api()); }
     if (S.autod.restant <= 0 && !S.flags.reacteurOk) { S.autod.restant = 0; fin(S.flags.lancee ? "gateway" : "silence"); return; }
   } else if (tableActive()) {
     S.restant -= dt;
     for (const [min, code] of [[60, "VIGIE_07"], [45, "VIGIE_08"], [30, "VIGIE_09"], [15, "VIGIE_10"], [5, "VIGIE_11"]])
-      if (S.restant <= min * MIN && !S.annonces[code]) { S.annonces[code] = true; if (S.restant > (min - 1) * MIN) Son.voix(code); }
+      if (S.restant <= min * MIN && !S.annonces[code]) { S.annonces[code] = true; if (S.restant > (min - 1) * MIN) dire(code); }
     if (S.restant <= 0) { fin("gateway"); return; }
   }
   // Le bruit retombe doucement.
@@ -124,6 +124,7 @@ setInterval(() => {
   if (S.flags.detecteur && S.bete.active && dist <= 1 && detecteurAudible()) ajouterBruit(dt / 1000 * 3, true);
   // La bête se déplace.
   if (S.bete.active && !silenceEnCours && tableActive() && !rencontreEnCours) {
+    if (S.bete.calme > 0) S.bete.calme -= dt;
     S.bete.prochain -= dt * (1 + S.bruit / 60);
     if (S.bete.prochain <= 0) { S.bete.prochain = 16000 + Math.random() * 16000; deplacerBete(); }
   }
@@ -135,20 +136,12 @@ document.addEventListener("visibilitychange", () => { dernier = performance.now(
 function retirerTemps(min, raison) { if (S.autod) return; S.restant -= min * MIN; if (raison) toast(raison); majHaut(); }
 
 // ——————————————————————————————————————————————— Bruit
-// Les téléphones écoutent la pièce pendant toute la partie : un mot trop fort, un rire, et la jauge monte comme pour une erreur.
-// Seuil : 12 dB au-dessus du fond de la pièce (20e centile de la dernière minute), qui inclut l'ambiance du Mac.
-// Le micro est ignoré quand le jeu joue lui-même un son (cris, voix, bips), pendant les silences (comptés à part) et quand on souffle exprès.
-let souffleEnCours = false, dernierEntendu = 0;
+// Le micro des téléphones ne compte que pendant les silences (voir silence()) : le reste du temps, les joueurs parlent librement.
+// On garde seulement le fond de la pièce (20e centile de la dernière minute) pour l'essai du micro.
+let souffleEnCours = false;
 function ecouterPiece(t, db) {
   const h = t.hist || (t.hist = []); h.push(db); if (h.length > 600) h.shift();
   if (h.length % 10 === 1) { const tri = [...h].sort((a, b) => a - b); t.fond = tri[Math.floor(tri.length * .2)]; }
-  if (!S || S.etape !== "jeu" || enPause || document.hidden || silenceEnCours || souffleEnCours || h.length < 30) return;
-  if (!(tableActive() || !$("#speciale").hidden) || Son.occupe()) return;
-  const exces = db - Math.max(t.fond, -75) - 12;
-  if (exces <= 0) return;
-  ajouterBruit(Math.min(1.2, exces * .04), true);
-  const j = $("#j-micro"); j.classList.remove("entendu"); void j.offsetWidth; j.classList.add("entendu");
-  if (performance.now() - dernierEntendu > 25000) { dernierEntendu = performance.now(); toast("Chut… Le vaisseau vous entend."); }
 }
 function ajouterBruit(n, discret) {
   S.bruit = Math.min(100, S.bruit + n); S.bruitMax = Math.max(S.bruitMax, S.bruit);
@@ -179,61 +172,100 @@ function deplacerBete() {
   if (S.bete.fixe) return;
   const p = S.bete.pos, voisins = lieu(p).voisins.filter(peutAllerBete);
   if (!voisins.length) return;
-  const versJoueurs = Math.random() < 0.14 + S.bruit / 100 * 0.7;
+  // Après une approche ou une rencontre, elle laisse les joueurs tranquilles quelques minutes (S.bete.calme).
+  const calme = S.bete.calme > 0;
+  const versJoueurs = Math.random() < 0.08 + S.bruit / 100 * 0.5;
   let suivant;
   if (versJoueurs) { const c = chemin(p, S.lieu, v => peutAllerBete(v) || v === S.lieu); suivant = c && c[1]; }
-  if (!suivant) { const choix = voisins.filter(v => v !== S.lieu || S.bruit > 70); suivant = choix[Math.floor(Math.random() * choix.length)]; }
+  if (calme && suivant === S.lieu) suivant = null;
+  if (!suivant) { const choix = voisins.filter(v => v !== S.lieu || (S.bruit > 70 && !calme)); suivant = choix[Math.floor(Math.random() * choix.length)]; }
   if (!suivant) return;
   if (suivant === S.lieu) { approche(); return; }
   S.bete.pos = suivant;
   const d = distanceBete();
   if (d === 1) Son.jouer(lieu(suivant).cache ? (Math.random() < .5 ? "BETE_RACLE" : "BETE_COURSE") : "BETE_CLICS");
-  if (d <= 2 && lieu(suivant).pont === "C" && !S.vus["annonceC" + S.chap] && S.chap >= 1) { S.vus["annonceC" + S.chap] = true; Son.voix("VIGIE_12"); }
+  if (d <= 2 && lieu(suivant).pont === "C" && !S.vus["annonceC" + S.chap] && S.chap >= 1) { S.vus["annonceC" + S.chap] = true; dire("VIGIE_12"); }
 }
 async function approcheAffut() {
   const ok = await silence({ duree: 15000 });
   if (!ok) rencontre(); else toast("Elle n'a rien entendu. Elle est toujours là, à côté.", 3600);
 }
 async function approche() {
-  const ok = await silence({ duree: 16000 + Math.random() * 8000, raison: "approche" });
+  Son.jouer("BETE_COURSE"); toast("Quelque chose arrive dans la coursive.", 2400);
+  const ok = await silence({ duree: 14000 + Math.random() * 6000, raison: "approche" });
   if (ok) {
     const autres = lieu(S.lieu).voisins.filter(v => peutAllerBete(v) && v !== S.bete.pos);
     if (autres.length) S.bete.pos = autres[Math.floor(Math.random() * autres.length)];
     S.bruit = Math.max(0, S.bruit - 30); S.bete.prochain = 25000;
   } else rencontre();
 }
+// Entrer là où elle se trouve : on a le temps de se taire et de reculer avant qu'elle ne se retourne.
+async function surprise(v) {
+  S.precedent = S.lieu; S.lieu = v; rendu();
+  const ok = await silence({ duree: 12000, sous: "Elle est là, dans la pièce. Ne bougez plus." });
+  if (!ok) { rencontre(); return; }
+  S.lieu = S.precedent || S.lieu; S.precedent = null;
+  rendu(); sauver(); toast("Vous reculez sans un bruit. Elle ne vous a pas entendus.", 3600);
+}
 
 // ——————————————————————————————————————————————— Le silence réel
-let silenceEnCours = null;
-function silence({ duree = 18000, raison = "", video = null, avant = null } = {}) {
+let silenceEnCours = null, masquerSilence = 0, silencesLances = 0;
+// D'abord « SILENCE » et un compte de 3 secondes pendant lequel rien ne compte (le temps de se taire).
+// Ensuite, le premier bruit est une alerte (elle s'arrête, le silence s'allonge un peu) ; le deuxième la fait attaquer.
+// Après chaque silence, elle laisse les joueurs tranquilles quelques minutes (S.bete.calme).
+const PREPARATION = 3000, SURDITE = 1500;
+function silence({ duree = 18000, raison = "", video = null, avant = null, sous = "Elle est là. Plus un bruit." } = {}) {
   if (window.__rapide) duree = Math.min(duree, 1500);
+  const prepa = window.__rapide ? 0 : PREPARATION;
   return new Promise(fin => {
     if (silenceEnCours) { fin(true); return; }
-    const el = $("#silence"), jauge = $("#silence-jauge");
-    let bruits = 0, fini = false;
+    const el = $("#silence"), jauge = $("#silence-jauge"), sousT = $("#silence-sous");
+    let bruits = 0, fini = false, sourdJusqu = performance.now() + prepa;
     const micros = telAvecMicro();
     $("#silence-micro").textContent = micros ? "Les micros écoutent la pièce." : (aDesTels() ? "Aucun téléphone n'a autorisé le micro : ne touchez à rien, ne parlez pas." : "Ne touchez à rien.");
     el.classList.toggle("avec-video", !!video);
     el.querySelector(".silence-media") && el.querySelector(".silence-media").remove();
     if (video) { const m = media(video, { boucle: true }); m.classList.add("silence-media"); el.prepend(m); }
-    el.hidden = false; requestAnimationFrame(() => el.classList.add("on"));
+    silencesLances++; clearTimeout(masquerSilence); el.hidden = false; requestAnimationFrame(() => el.classList.add("on"));
     Son.silence(true); Son.couperVoix();
     instrument("silence", { on: true, duree });
-    const debut = performance.now();
-    const passes = setInterval(() => { if (Math.random() < .5) Son.jouer(Math.random() < .5 ? "BETE_CLICS" : "BETE_RESPIRE"); }, 4200);
-    Son.jouer("BETE_PASSE");
-    const anim = setInterval(() => { jauge.style.width = Math.min(100, (performance.now() - debut) / duree * 100) + "%"; }, 100);
-    const trahi = () => { if (fini) return; bruits++; if (bruits >= 1) terminer(false); };
+    const debut = performance.now() + prepa;
+    el.classList.remove("alerte"); el.classList.add("prepa");
+    const compte = n => { sousT.textContent = n > 0 ? `Taisez-vous. ${n}…` : sous; };
+    compte(Math.ceil(prepa / 1000));
+    const decompte = setInterval(() => { const r = Math.ceil((debut - performance.now()) / 1000); compte(r); if (r <= 0) { clearInterval(decompte); el.classList.remove("prepa"); Son.jouer("BETE_PASSE"); } }, 200);
+    if (!prepa) Son.jouer("BETE_PASSE");
+    const passes = setInterval(() => { if (performance.now() > debut && Math.random() < .5) Son.jouer(Math.random() < .5 ? "BETE_CLICS" : "BETE_RESPIRE"); }, 4200);
+    const anim = setInterval(() => { jauge.style.width = Math.max(0, Math.min(100, (performance.now() - debut) / duree * 100)) + "%"; }, 100);
+    const trahi = (pourquoi = "Elle s'est arrêtée. Elle écoute. Encore un bruit et elle attaque.") => {
+      if (fini || performance.now() < sourdJusqu) return;
+      bruits++;
+      if (bruits >= 2) { terminer(false); return; }
+      // Première alerte : elle s'arrête et écoute. On allonge le silence de quelques secondes.
+      sourdJusqu = performance.now() + SURDITE;
+      el.classList.remove("alerte"); void el.offsetWidth; el.classList.add("alerte");
+      sousT.textContent = pourquoi;
+      Son.jouer("BETE_CLICS"); clearTimeout(t); t = setTimeout(() => terminer(true), Math.max(debut + duree - performance.now(), 0) + 5000);
+    };
+    // Le détecteur qui bipe pendant le silence trahit les joueurs : trois secondes sans l'étouffer valent un bruit.
+    let bipsDet = 0;
+    const det = setInterval(() => {
+      const bipe = S.flags.detecteur && telsDet().length && donneesDetecteur().cadence && detecteurAudible();
+      $("#silence-micro").textContent = bipe ? "Le détecteur bipe : posez-le face contre la table, ou gardez le doigt sur son écran." : micros ? "Les micros écoutent la pièce." : "Ne touchez à rien.";
+      if (!bipe || performance.now() < debut) { bipsDet = 0; return; }
+      bipsDet += 500; if (bipsDet >= 3000) { bipsDet = 0; trahi("Le détecteur bipe. Elle a entendu. Étouffez-le, vite."); }
+    }, 500);
     const clavier = e => { if (["Shift", "Meta", "Alt", "Control"].includes(e.key)) return; trahi(); };
     const clic = e => { e.preventDefault(); e.stopPropagation(); trahi(); };
     document.addEventListener("keydown", clavier, true); el.addEventListener("pointerdown", clic);
     silenceEnCours = { bruit: trahi };
-    const t = setTimeout(() => terminer(true), duree);
+    let t = setTimeout(() => terminer(true), prepa + duree);
     function terminer(ok) {
-      if (fini) return; fini = true; clearTimeout(t); clearInterval(passes); clearInterval(anim);
+      if (fini) return; fini = true; clearTimeout(t); clearInterval(passes); clearInterval(anim); clearInterval(decompte); clearInterval(det);
+      S.bete.calme = 4 * MIN;
       document.removeEventListener("keydown", clavier, true); el.removeEventListener("pointerdown", clic);
       silenceEnCours = null; instrument("silence", { on: false }); Son.silence(false);
-      if (ok) { el.classList.remove("on"); setTimeout(() => { el.hidden = true; }, 700); toast("Elle s'éloigne.", 2600); }
+      if (ok) { el.classList.remove("on"); masquerSilence = setTimeout(() => { el.hidden = true; }, 700); toast("Elle s'éloigne.", 2600); }
       else { el.classList.remove("on"); el.hidden = true; }
       fin(ok);
     }
@@ -255,7 +287,7 @@ async function rencontre({ fuir = true } = {}) {
   if (fuir && S.precedent && S.precedent !== S.lieu) { S.lieu = S.precedent; S.precedent = null; }
   const loin = Object.keys(J.LIEUX).filter(v => peutAllerBete(v) && (chemin(S.lieu, v) || []).length > 3);
   if (loin.length) S.bete.pos = loin[Math.floor(Math.random() * loin.length)];
-  S.bete.prochain = 40000;
+  S.bete.prochain = 40000; S.bete.calme = 4 * MIN;
   rendu(); sauver(); rencontreEnCours = false;
   billet(S.rencontres === 1 ? "Elle était là. Vous avez fui sans savoir comment, sans vous retourner, et vous vous êtes arrêtés quand vos jambes n'ont plus voulu.<br><br><b>Première rencontre.</b> Il n'y en aura pas beaucoup d'autres." : "Encore elle. Plus près, cette fois. Vous avez senti son souffle.<br><br><b>Deuxième rencontre.</b> Elle connaît votre odeur, maintenant. Elle ne vous lâchera plus.");
 }
@@ -265,7 +297,7 @@ const attendre = ms => new Promise(r => setTimeout(r, ms));
 function detecteurAudible() {
   const dets = telsDet();
   if (dets.length) return dets.some(([, t]) => !t.face);
-  return !detEcranRetourne;
+  return !detEcranRetourne && !silenceEnCours;
 }
 function donneesDetecteur() {
   if (!S || !S.flags.detecteur) return { actif: false };
@@ -293,7 +325,7 @@ function dessinerDetEcran(dd) {
   g.strokeStyle = "rgba(124,242,154,.8)"; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.sin(balayage) * R, -Math.cos(balayage) * R); g.stroke();
   (dd.blips || []).forEach(b => { g.fillStyle = "#b8ffc8"; g.beginPath(); g.arc(Math.sin(b.a) * R * b.d, -Math.cos(b.a) * R * b.d, 6, 0, 7); g.fill(); });
   g.restore();
-  if (dd.cadence && performance.now() > prochainBip && !detEcranRetourne) { prochainBip = performance.now() + dd.cadence; Son.bips([[1200]], { duree: .07 }); }
+  if (dd.cadence && performance.now() > prochainBip && !detEcranRetourne && !silenceEnCours) { prochainBip = performance.now() + dd.cadence; Son.bips([[1200]], { duree: .07 }); }
 }
 
 // ——————————————————————————————————————————————— Effets
@@ -318,13 +350,24 @@ function reveler(n) { n = +n; if (enMain(n)) return; S.defausse = S.defausse.fil
 function defausser(n) { n = +n; if (!enMain(n)) return; S.main = S.main.filter(x => x !== n); S.defausse.push(n); if (carteOuverte === n) fermerCarte(); }
 
 // ——————————————————————————————————————————————— Interphone
+// Tout ce qui passe par l'interphone est noté dans le journal (VIGIE comprise), pour le relire ou le réécouter. Les réécoutes passent journal: false.
+function journaliser(c) { if (S && J.VOIX[c] && !S.journal.includes(c)) S.journal.push(c); }
+// Rien ne parle pendant un silence : un message en cours est coupé et reprend du début quand elle est partie, les suivants attendent.
+const finSilence = async () => { while (silenceEnCours) await attendre(300); };
+async function voixHorsSilence(c) {
+  await finSilence();
+  const n = silencesLances; await Son.voix(c);
+  if (n !== silencesLances) { await finSilence(); await attendre(800); await Son.voix(c); }
+}
+function dire(c) { journaliser(c); return voixHorsSilence(c); }
 let fileInterphone = Promise.resolve();
 function interphone(codes, { journal = true } = {}) {
   fileInterphone = fileInterphone.then(async () => {
+    await finSilence();
     Son.jouer("SFX_INTERPHONE"); await attendre(AD ? 300 : 500);
     for (const c of codes) {
-      if (journal && !S.journal.includes(c) && J.VOIX[c] && !c.startsWith("VIGIE")) S.journal.push(c);
-      await Son.voix(c);
+      if (journal) journaliser(c);
+      await voixHorsSilence(c);
     }
   });
   return fileInterphone;
@@ -340,7 +383,6 @@ function majHaut() {
   $("#chrono").classList.toggle("autod", !!S.autod);
   $("#chrono").classList.toggle("urgent", (S.autod ? S.autod.restant : S.restant) < 5 * MIN);
   $("#bruit").style.width = S.bruit + "%";
-  $("#j-micro").hidden = !telAvecMicro();
   $(".bruit").classList.toggle("haut", S.bruit > 60);
   $$("#rencontres i").forEach((i, k) => i.classList.toggle("plein", k < S.rencontres));
 }
@@ -445,7 +487,7 @@ function aller(v) {
     const p = lieu(S.lieu).portes && lieu(S.lieu).portes[v];
     toast(p && raisons[p] ? raisons[p] : `${lieu(v).nom} : ${o}.`); Son.jouer("SFX_BIP_NON"); return;
   }
-  if (S.bete.active && S.bete.pos === v) { S.precedent = S.lieu; S.lieu = v; rendu(); rencontre(); return; }
+  if (S.bete.active && S.bete.pos === v) { surprise(v); return; }
   S.precedent = S.lieu; S.lieu = v; ajouterBruit(2, true);
   rendu(); sauver();
   entree(v);
@@ -552,8 +594,8 @@ function prendre(n) {
 }
 async function sceneCantine() {
   await attendre(900); Son.jouer("SFX_GOUTTE"); await attendre(1800);
-  S.bete.pos = "condC"; Son.voix("VIGIE_12");
-  await attendre(1500);
+  S.bete.pos = "condC"; await dire("VIGIE_12");
+  await attendre(900);
   const ok = await silence({ duree: 20000, video: "v-plafond" });
   if (!ok) { rencontre({ fuir: false }); return; }
   S.bete.pos = "condB"; S.bete.prochain = 45000;
@@ -600,7 +642,7 @@ async function chapitre(i, { reprise = false } = {}) {
     S.lieu = c.lieu;
     (c.cartes || []).forEach(reveler);
     S.main.filter(x => carte(x) && !carte(x).garde && i > 0 && !(c.cartes || []).includes(x)).forEach(defausser);
-    S.bete = { pos: c.bete.depart, active: c.bete.active, prochain: 35000 };
+    S.bete = { pos: c.bete.depart, active: c.bete.active, prochain: 35000, calme: 2 * MIN };
     if (i === 4) { S.flags.porteB = true; S.flags.porteA = true; }
     if (i === 5) { S.flags.porteD = true; S.flags.porteA = true; S.bete.fixe = "coursiveD"; }
     const copie = JSON.parse(JSON.stringify(S)); delete copie.point; S.point = copie;
@@ -610,20 +652,20 @@ async function chapitre(i, { reprise = false } = {}) {
   entrerTable();
   if (reprise) return;
   // Ouvertures propres à chaque chapitre
-  if (i === 0) setTimeout(() => interphone(["VIGIE_01"], { journal: false }), 900);
+  if (i === 0) setTimeout(() => interphone(["VIGIE_01"]), 900);
   if (i === 1) setTimeout(() => interphone(["VAREK_06", "BRANDT_02"]), 1500);
   if (i === 2) { if (!enMain(71)) setTimeout(() => interphone(["BRANDT_05"]), 900); else setTimeout(() => ouvrirCarte(71), 700); }
   if (i === 3) setTimeout(() => interphone(["VAREK_07"]), 1500);
   if (i === 4) setTimeout(() => interphone(["BRANDT_06", "BRANDT_FREDONNE", "BRANDT_07"]), 1500);
-  if (i === 5) setTimeout(() => interphone(["VIGIE_17"], { journal: false }), 400);
+  if (i === 5) setTimeout(() => interphone(["VIGIE_17"]), 400);
 }
 function entrerTable() { ecran("table"); ambianceLieu(); Son.musique(null); rendu(); envoyerEtat(); dernier = performance.now(); }
 
 function ouvrirPorteSas() {
-  if (!S.flags.pression) { interphone(["VIGIE_04"], { journal: false }); Son.jouer("SFX_BIP_NON"); return; }
-  if (!S.flags.adn) { interphone(["VIGIE_05"], { journal: false }); Son.jouer("SFX_BIP_NON"); return; }
+  if (!S.flags.pression) { interphone(["VIGIE_04"]); Son.jouer("SFX_BIP_NON"); return; }
+  if (!S.flags.adn) { interphone(["VIGIE_05"]); Son.jouer("SFX_BIP_NON"); return; }
   S.flags.porteSas = true; defausser(13); Son.jouer("SFX_PORTE"); rendu(); sauver();
-  interphone(["VIGIE_06"], { journal: false }).then(finChapitre1);
+  interphone(["VIGIE_06"]).then(finChapitre1);
 }
 async function finChapitre1() {
   S.etape = "recit"; sauver();
@@ -642,14 +684,18 @@ function ouvrirGrille() {
 const PRECHARGEES = new Map();
 function precharger(...noms) {
   noms.filter(n => VIDEOS.has(n) && !PRECHARGEES.has(n)).forEach(n => {
-    const v = document.createElement("video"); v.src = `${RACINE}media/video/${n}.mp4`; v.muted = true; v.playsInline = true; v.preload = "auto"; v.load(); PRECHARGEES.set(n, v);
+    const v = document.createElement("video"); v.src = srcVideo(n); v.muted = true; v.playsInline = true; v.preload = "auto"; v.load(); PRECHARGEES.set(n, v);
   });
 }
+// Les vidéos sont déjà étalonnées dans le fichier (scripts/poser-videos.sh) : pas de filtre CSS dessus, il les faisait saccader.
+// ?v= change à chaque nouvel encodage, pour ne pas mélanger un ancien fichier en cache et le nouveau CSS.
+const srcVideo = n => `${RACINE}media/video/${n}.mp4?v=60i`;
 function media(nom, { boucle = false, image = null } = {}) {
   const box = document.createElement("div"); box.className = "media";
   if (nom && VIDEOS.has(nom)) {
     const v = PRECHARGEES.get(nom) || document.createElement("video"); PRECHARGEES.delete(nom);
-    if (!v.src) v.src = `${RACINE}media/video/${nom}.mp4`;
+    if (!v.src) v.src = srcVideo(nom);
+    box.classList.add("media-video");
     v.muted = true; v.playsInline = true; v.autoplay = true; v.loop = boucle; box.appendChild(v);
     v.play().catch(() => {});
   } else if (image || (nom && nom.startsWith("c-"))) {
@@ -670,7 +716,7 @@ function cine(plans, { court = false, musique = null, interphone: inter = false 
       if (inter) zm.innerHTML = `<div class="interphone-onde"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>`;
       txt.innerHTML = p.titre ? `<p class="cine-titre-chap">${p.titre}</p>${p.texte || ""}` : (p.texte ? `<p>${p.texte}</p>` : "");
       requestAnimationFrame(() => requestAnimationFrame(() => txt.classList.add("visible")));
-      if (p.voix) { $("#cine").classList.add("parle"); await Son.voix(p.voix); $("#cine").classList.remove("parle"); if (!S.journal.includes(p.voix) && !p.voix.startsWith("VIGIE")) S.journal.push(p.voix); }
+      if (p.voix) { $("#cine").classList.add("parle"); journaliser(p.voix); await Son.voix(p.voix); $("#cine").classList.remove("parle"); }
       else await attendre((court ? 1600 : 2400) * (window.__rapide ? .2 : 1));
       enCours = false; suite.classList.add("visible");
       suite.textContent = i < plans.length - 1 ? "Continuer" : (court ? "Commencer" : "Continuer");
@@ -727,7 +773,7 @@ function brancherAccusation() {
     if (!qui || !/^\d\d:\d\d$/.test(h) || cochees.length !== 3) { toast("Il faut un nom, une heure (hh:mm) et exactement trois preuves."); return; }
     const A = J.ACCUSATION, ok = qui === A.suspect && h === A.heure && cochees.every(n => A.preuves.includes(n));
     $("#m-dossier").hidden = true;
-    if (!ok) { interphone(["VIGIE_15"], { journal: false }); ajouterBruit(10); retirerTemps(5, "Cinq minutes perdues."); return; }
+    if (!ok) { interphone(["VIGIE_15"]); ajouterBruit(10); retirerTemps(5, "Cinq minutes perdues."); return; }
     S.flags.accuse = true; sauver(); Mecas.accusationJuste(api());
   };
 }
@@ -770,9 +816,9 @@ $("#b-plan").onclick = () => {
 };
 $("#b-journal").onclick = () => {
   const ol = $("#journal");
-  ol.innerHTML = S.journal.length ? S.journal.map(c => { const [qui, , t] = J.VOIX[c]; return `<li><span class="st-qui st-${qui.toLowerCase()}">${({ VAREK: "Varek", BRANDT: "Jo", LEMAIRE: "Lemaire" })[qui] || qui}</span> ${t.length > 90 ? t.slice(0, 88) + "…" : t} <button class="lien" data-c="${c}">Réécouter</button></li>`; }).join("") : `<li class="vide">Aucun message.</li>`;
+  ol.innerHTML = S.journal.length ? S.journal.map(c => { const [qui, , t] = J.VOIX[c]; return `<li><div class="j-tete"><span class="st-qui st-${qui.toLowerCase()}">${({ VAREK: "Varek", BRANDT: "Jo", LEMAIRE: "Lemaire" })[qui] || qui}</span><button class="btn btn-petit" data-c="${c}">Réécouter</button></div><p>${t}</p></li>`; }).join("") : `<li class="vide">Aucun message.</li>`;
   $$("button[data-c]", ol).forEach(b => b.onclick = () => interphone([b.dataset.c], { journal: false }));
-  $("#m-journal").hidden = false;
+  $("#m-journal").hidden = false; ol.lastElementChild && ol.lastElementChild.scrollIntoView({ block: "end" });
 };
 function enigmesOuvertes() { return J.ENIGMES.filter(e => enMain(e.si) && !(e.resolu && S.flags[e.resolu])); }
 function ouvrirIndices() {

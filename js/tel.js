@@ -62,13 +62,16 @@ function recevoir(d) {
 let micro = null, analyseur = null, ctx = null, mouvementOk = false, verrouEcran = null;
 async function activer() {
   const err = $("#debut-err"); err.textContent = "";
-  try { ctx = new (window.AudioContext || window.webkitAudioContext)(); await ctx.resume(); } catch (_) {}
+  // Sur iPhone, la permission des mouvements doit être demandée tout de suite dans le geste : après un await, iOS la refuse en silence
+  // (c'est ce qui empêchait le détecteur de se taire face contre la table, et l'inclinaison du drone).
+  const demandeMvt = typeof DeviceOrientationEvent !== "undefined" && DeviceOrientationEvent.requestPermission ? DeviceOrientationEvent.requestPermission().catch(() => "denied") : null;
+  try { ctx = new (window.AudioContext || window.webkitAudioContext)(); ctx.resume(); } catch (_) {}
   try {
     micro = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
     const src = ctx.createMediaStreamSource(micro); analyseur = ctx.createAnalyser(); analyseur.fftSize = 2048; src.connect(analyseur);
   } catch (_) { err.textContent = "Micro refusé : les silences se joueront sans lui."; }
   try {
-    if (typeof DeviceOrientationEvent !== "undefined" && DeviceOrientationEvent.requestPermission) mouvementOk = (await DeviceOrientationEvent.requestPermission()) === "granted";
+    if (demandeMvt) mouvementOk = (await demandeMvt) === "granted";
     else mouvementOk = "DeviceOrientationEvent" in window;
   } catch (_) { mouvementOk = false; }
   if (mouvementOk) window.addEventListener("deviceorientation", orientation);
@@ -80,12 +83,15 @@ $$("[data-role]").forEach(b => b.onclick = async () => { await activer(); choisi
 function vibrer(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (_) {} }
 
 // ——————————————————————————————————————————————— Orientation : face contre table, drone
-let face = false, incl = { g: 0, b: 0 }, droneOn = false, dernierIncl = 0;
+// Le détecteur se tait face contre la table, ou tant qu'un doigt reste posé sur l'écran (la main sur le haut-parleur).
+let face = false, posFace = false, doigt = false, incl = { g: 0, b: 0 }, droneOn = false, dernierIncl = 0;
+function majFace() { const muet = posFace || doigt; if (muet !== face) { face = muet; envoyer({ t: "face", bas: muet }); majDetEtat(); } }
+const toucher = e => { doigt = e.touches.length > 0; majFace(); };
+["touchstart", "touchend", "touchcancel"].forEach(ev => document.addEventListener(ev, toucher, { passive: true }));
 function orientation(e) {
   const b = e.beta || 0, g = e.gamma || 0;
   incl = { g, b };
-  const bas = Math.abs(b) > 150;
-  if (bas !== face) { face = bas; envoyer({ t: "face", bas }); majDetEtat(); }
+  posFace = Math.abs(b) > 150; majFace();
   if (droneOn) {
     const t = performance.now(); if (t - dernierIncl > 100) { dernierIncl = t; envoyer({ t: "incl", g, b }); }
     const bulle = $("#bulle"); bulle.style.transform = `translate(${Math.max(-1, Math.min(1, g / 35)) * 70}px, ${Math.max(-1, Math.min(1, b / 35)) * 70}px)`;
@@ -105,7 +111,7 @@ setInterval(() => {
   let depasse = false;
   if (silenceOn) {
     if (db > seuil) depasses++; else depasses = 0;
-    depasse = depasses >= 2;
+    depasse = depasses >= 3;
     $("#silence-niveau").style.width = Math.max(0, Math.min(100, (db + 80) * 1.25)) + "%";
     if (depasse) vibrer(200);
   }
@@ -129,6 +135,7 @@ function instrument(d) {
     seuil = Math.max(fond() + 14, -58);
     $("#silence-seuil").style.left = Math.max(0, Math.min(100, (seuil + 80) * 1.25)) + "%";
     montrer("ins-silence", d.on); document.body.classList.toggle("en-silence", silenceOn);
+    $("#sil-det").hidden = !(silenceOn && detecteurActif && (role === "detecteur" || role === "deux"));
   }
 }
 // Pouce
@@ -175,7 +182,7 @@ let donneesDet = { actif: false, blips: [], cadence: 0 }, ang = 0, prochainBip =
 function majDetEtat() {
   const e = $("#det-etat");
   if (!detecteurActif) e.textContent = "Pas de batterie.";
-  else if (face) e.textContent = "Face contre table : silencieux.";
+  else if (face) e.textContent = doigt ? "Étouffé : silencieux." : "Face contre table : silencieux.";
   else e.textContent = donneesDet.cadence ? (donneesDet.cadence < 500 ? "Très proche." : donneesDet.cadence < 1200 ? "Mouvement." : "Mouvement lointain.") : "Rien.";
   document.body.classList.toggle("det-actif", detecteurActif);
 }
