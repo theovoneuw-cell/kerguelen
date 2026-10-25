@@ -243,7 +243,7 @@ body.plein .plein-global { display: none !important; }
 /* Le sac en petit : vignettes défilantes entre « Prendre » et les boutons. Un clic ouvre la carte. */
 .mini-sac { flex: 1 1 160px; min-width: 0; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 0; -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent); }
 .mini-sac::-webkit-scrollbar { display: none; }
-.mini-carte { position: relative; flex: none; width: 46px; height: 34px; padding: 0; background: #0a0d10; border: 1px solid var(--ligne-2); border-radius: 2px; cursor: pointer; overflow: hidden; }
+.mini-carte { position: relative; flex: none; width: 46px; height: 34px; padding: 0; background: #0a0d10; border: 1px solid var(--ligne-2); border-radius: 0; cursor: pointer; overflow: hidden; }
 .mini-carte:hover { border-color: var(--doux); }
 .mini-carte .mi-img { position: absolute; inset: 0; background: center/cover no-repeat; opacity: .7; }
 .mini-carte .mi-img.vide { background: repeating-linear-gradient(135deg, #0d1215 0 4px, #0a0e11 4px 8px); }
@@ -505,6 +505,8 @@ body.main-ouverte .det-ecran { right: 356px; }
 @media (max-width: 1100px) { .main-joueur { width: 250px; } body.main-ouverte .det-ecran { right: 266px; } .regles { grid-template-columns: 1fr; } .tel-grille { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) {
   #accueil::after, #brief::after, #fin::after { animation: none !important; }
+  body.secousse .ecran.actif, body.secousse .speciale, .flash.on, .rencontre .media-img, .chrono.urgent, .p-lieu.ici .halo, .titre-ombre::after { animation: none !important; }
+  .s-fuite.strobo::after { display: none; }
   .titre-fond, .titre-gyro, .titre-nom, .media-img, .cine-media .media video, .pc-titre { animation: none !important; }
   .titre-gyro { display: none; } .pc-image { transition: none; }
   body.pret #titre .titre-contenu, body.pret #titre .titre-menu, .brief-doc, .fin-boite, .panneau, .billet, .carte-grande, .modale-fond { animation: none !important; }
