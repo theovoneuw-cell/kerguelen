@@ -423,6 +423,7 @@ function renduScene() {
     b.onclick = () => aller(v);
     z.appendChild(b);
   });
+  placerLegende();
 }
 const visible = v => S.ouverts.includes(v) || v === "sas" || (S.chap >= 1 && ["labo", "passerelle", "coursiveD"].includes(v));
 function ouvert(v) {
@@ -471,6 +472,15 @@ function ambianceLieu() {
 // L'image (16:9) couvre tout l'écran, sauf si le recadrage cachait un numéro sous une barre ou hors champ :
 // on la réduit alors juste ce qu'il faut, et le fond flou comble les bandes.
 const ETENDUE = (() => { const t = Object.values(J.NOMBRES).flat(); return { x0: Math.min(...t.map(n => n[1])), x1: Math.max(...t.map(n => n[1])), y0: Math.min(...t.map(n => n[2])), y1: Math.max(...t.map(n => n[2])) }; })();
+// La légende du lieu se met dans le coin de l'écran où elle ne cache aucun numéro (haut gauche d'abord).
+function placerLegende() {
+  const leg = $(".scene-legende"), coins = ["hg", "hd", "bg", "bd"];
+  const nums = [...$$(".nombre-cache")].map(n => n.getBoundingClientRect());
+  const gene = () => { const L = leg.getBoundingClientRect(); return nums.filter(b => b.right > L.left - 8 && b.left < L.right + 8 && b.bottom > L.top - 8 && b.top < L.bottom + 8).length; };
+  let meilleur = coins[0], min = Infinity;
+  for (const c of coins) { leg.dataset.coin = c; const g = gene(); if (g < min) { min = g; meilleur = c; } if (!g) break; }
+  leg.dataset.coin = meilleur;
+}
 function ajusterScene() {
   const table = $("#table"), cadre = $("#scene-cadre"), b = $("#scene-boite"); const W = cadre.clientWidth, H = cadre.clientHeight;
   if (!W || !H) return;
@@ -484,6 +494,7 @@ function ajusterScene() {
   w = Math.min(w, (cy - haut - m) / demi(y0) * 16 / 9, (H - bas - m - cy) / demi(y1) * 16 / 9);
   const h = w * 9 / 16;
   Object.assign(b.style, { width: w + "px", height: h + "px", left: (W - w) / 2 + "px", top: cy - h / 2 + "px" });
+  if (S && tableActive()) placerLegende();
 }
 { const ro = new ResizeObserver(ajusterScene); ["#scene-cadre", "#table > .barre-haut", "#table > .barre-bas"].forEach(q => ro.observe($(q))); }
 

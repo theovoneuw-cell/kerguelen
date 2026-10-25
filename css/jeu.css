@@ -144,10 +144,14 @@ select { font: inherit; color: var(--texte); background: #05070a; border: 1px so
 body.panne .scene-noir { background: radial-gradient(circle calc(var(--rayon) * .7) at var(--lx) var(--ly), rgba(40,0,0,0) 0, rgba(20,0,0,.97) 100%); }
 .nombre-cache { position: absolute; transform: translate(-50%, -50%) rotate(var(--r)); font-family: var(--f-titre); font-weight: 700; font-size: clamp(14px, 1.7vw, 24px); color: rgba(236, 228, 208, .72); letter-spacing: .02em; text-shadow: 0 0 2px rgba(0,0,0,.6); pointer-events: none; mix-blend-mode: screen; }
 .nombre-cache.pris { opacity: .28; }
-.scene-legende { position: absolute; z-index: 11; left: 18px; top: calc(var(--haut) + 14px); max-width: min(480px, 38vw); padding: 10px 14px 12px; background: rgba(8,10,12,.74); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border-left: 2px solid var(--accent-sombre); }
-.scene-legende h2 { font-size: 1.15rem; margin: 0 0 .1em; }
-.scene-legende p { color: var(--doux); font-size: .92rem; margin: 0 0 .5em; }
-.scene-sorties { display: flex; flex-wrap: wrap; gap: 8px; }
+.scene-legende { position: absolute; z-index: 11; left: 18px; top: calc(var(--haut) + 12px); width: max-content; max-width: min(380px, 32vw); padding: 8px 12px 10px; background: rgba(8,10,12,.74); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border-left: 2px solid var(--accent-sombre); }
+.scene-legende[data-coin="hd"] { left: auto; right: 18px; }
+.scene-legende[data-coin="bg"] { top: auto; bottom: calc(var(--bas) + 12px); }
+.scene-legende[data-coin="bd"] { top: auto; left: auto; right: 18px; bottom: calc(var(--bas) + 12px); }
+.scene-legende h2 { font-size: 1rem; margin: 0 0 .1em; }
+.scene-legende p { color: var(--doux); font-size: .84rem; line-height: 1.4; margin: 0 0 .45em; }
+.scene-sorties .btn-petit { padding: .25em .6em; font-size: .8rem; }
+.scene-sorties { display: flex; flex-wrap: wrap; gap: 5px; }
 .sortie::before { content: "→ "; color: var(--pale); }
 .sortie .verrou { color: var(--pale); font-size: .8em; margin-left: .3em; }
 
