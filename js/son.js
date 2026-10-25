@@ -113,10 +113,19 @@
   }
 
   // ——— API
+  // Variantes : CODE_1, CODE_2… livrées à la place de CODE ; le jeu en tire une au hasard, jamais deux fois de suite la même.
+  const derniere = new Map();
+  function variante(code) {
+    const v = [];
+    for (let i = 1; MEDIAS.has(`${code}_${i}`); i++) v.push(`${code}_${i}`);
+    if (!v.length) return code;
+    const choix = v.length > 1 ? v.filter(x => x !== derniere.get(code)) : v;
+    const c = choix[Math.floor(Math.random() * choix.length)]; derniere.set(code, c); return c;
+  }
   async function jouer(code, opts = {}) {
     if (AD) { decrire(code, opts); return; }
     if (!ctx || coupe) return;
-    const buf = await tampon(code);
+    const buf = await tampon(variante(code));
     if (buf) { occuper(buf.duration * 1000 + 400); lireTampon(buf, busSfx, opts); return; }
     if (SYNTH[code]) { occuper(1800); SYNTH[code](); }
   }

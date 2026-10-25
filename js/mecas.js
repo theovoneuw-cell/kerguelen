@@ -163,7 +163,7 @@
         if (ok && !S.flags.badgeCommandant) { A.toast("La voix est bonne. Il manque la première autorisation : un badge d'officier."); return; }
         if (!ok) { await A.interphone(["VIGIE_23"], { journal: false }); A.ajouterBruit(5); return; }
         S.flags.chambre = true; A.fermerCarte(); Son.jouer("SFX_PORTE"); A.sauver();
-        await A.interphone(["VIGIE_22"], { journal: false });
+        await A.interphone(["VAREK_MONTAGE", "VIGIE_22"], { journal: false });
         A.aller("vigie");
       };
     },

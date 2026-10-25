@@ -108,6 +108,7 @@ setInterval(() => {
   if (S.autod) {
     S.autod.restant -= dt; S.autod.ecoule += dt;
     if (!S.autod.dix && S.autod.restant <= 10 * MIN) { S.autod.dix = true; Son.voix("VIGIE_24"); }
+    if (!S.autod.cinq && S.autod.restant <= 5 * MIN) { S.autod.cinq = true; Son.voix("VIGIE_25"); }
     if (!S.autod.override && S.autod.ecoule >= 11 * MIN) { S.autod.override = true; Mecas.override(api()); }
     if (S.autod.restant <= 0 && !S.flags.reacteurOk) { S.autod.restant = 0; fin(S.flags.lancee ? "gateway" : "silence"); return; }
   } else if (tableActive()) {
