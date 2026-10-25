@@ -5,28 +5,60 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Kerguelen</title>
 <meta name="description" content="Escape game horrifique à bord d'un remorqueur spatial. Écran commun et téléphones, 2 ou 3 joueurs, environ 1 h 30.">
-<meta name="theme-color" content="#06080a">
+<meta name="theme-color" content="#05080b">
 <link rel="icon" href="img/icone.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@200..700&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preload" as="image" href="img/l-coursive.jpg">
 <link rel="stylesheet" href="css/jeu.css?v=1">
 </head>
 <body data-version="ad" class="sur-titre">
 
+<!-- ——— Préchargement : le vaisseau se rallume -->
+<div id="prechargement" class="prechargement" aria-hidden="true">
+  <div class="pc-image"></div>
+  <p class="pc-titre">Kerguelen</p>
+  <div class="pc-jauge"><i id="pc-jauge"></i></div>
+  <p class="pc-etat" id="pc-etat">Mise sous tension</p>
+</div>
+<script>
+// Préchargement : la jauge suit le vrai chargement (image du titre, polices, page). Durée minimale courte pour la séquence,
+// sortie forcée à 7 s, un clic ou une touche passe. Il ne bloque jamais le jeu.
+(function () {
+  var pc = document.getElementById("prechargement"), jauge = document.getElementById("pc-jauge"), etat = document.getElementById("pc-etat");
+  var racine = document.body.dataset.racine || "", t0 = performance.now(), fait = 0;
+  var noms = ["Mise sous tension", "Alimentation de secours", "Systèmes de bord", "Éclairage"];
+  function image(src) { return new Promise(function (ok) { var i = new Image(); i.onload = i.onerror = ok; i.src = racine + src; }); }
+  var taches = [image("img/l-coursive.jpg"), document.fonts ? document.fonts.ready : Promise.resolve(), new Promise(function (ok) { if (document.readyState === "complete") ok(); else addEventListener("load", ok); }), image("img/l-sas.jpg")];
+  taches.forEach(function (t) { t.then(function () { fait++; jauge.style.width = (fait / taches.length * 100) + "%"; etat.textContent = noms[Math.min(fait, noms.length - 1)]; }); });
+  function fin() {
+    if (!pc || pc.classList.contains("fini")) return;
+    pc.classList.add("fini"); document.body.classList.add("pret");
+    setTimeout(function () { pc.classList.add("parti"); }, 900);
+    setTimeout(function () { pc.remove(); }, 1700);
+  }
+  Promise.all(taches).then(function () { setTimeout(fin, Math.max(0, 1800 - (performance.now() - t0))); });
+  setTimeout(fin, 7000);
+  pc.addEventListener("click", fin); addEventListener("keydown", fin, { once: true });
+})();
+</script>
+
 <!-- ——— Titre -->
 <section id="titre" class="ecran actif">
-  <div class="titre-fond"></div>
+  <div class="titre-fond"></div><div class="titre-etalon"></div><div class="titre-gyro"></div><div class="titre-ombre"></div>
+  <p class="titre-haut">Harrow-Ikeda · remorqueur-raffinerie de classe K</p>
   <div class="titre-contenu">
-    <p class="titre-sur">Harrow-Ikeda · remorqueur-raffinerie de classe K</p>
     <h1 class="titre-nom">Kerguelen</h1>
     <p class="titre-sous">Ne la ramenez pas.</p>
-    <div class="titre-actions">
-      <button class="btn btn-principal" id="b-nouvelle">Nouvelle partie</button>
-      <button class="btn" id="b-reprendre" hidden>Reprendre la partie</button>
-    </div>
-    <p class="titre-info">2 ou 3 joueurs · un grand écran pour tous, un ou deux téléphones · environ 1 h 30 · <span id="titre-version"></span></p>
+    <p class="titre-sur">2 ou 3 joueurs · un grand écran, un ou deux téléphones · environ 1 h 30</p>
   </div>
+  <nav class="titre-menu" aria-label="Menu">
+    <button id="b-nouvelle">Nouvelle partie</button>
+    <button id="b-reprendre" hidden>Reprendre la partie</button>
+    <button id="b-comment">Comment jouer</button>
+  </nav>
+  <p class="titre-pied"><span id="titre-version"></span><span>Lumière éteinte · son fort ou casque partagé</span></p>
 </section>
 
 <!-- ——— Avant de jouer -->
@@ -126,7 +158,8 @@
       <div class="scene-cadre" id="scene-cadre">
         <div class="scene-fond" id="scene-fond"></div>
         <div class="scene-boite" id="scene-boite">
-          <img class="scene-img" id="scene-img" alt="">
+          <img class="scene-img" id="scene-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="">
+          <div class="etalon"></div>
           <div class="scene-calques" id="scene-calques"></div>
           <div class="scene-noir" id="scene-noir"></div>
           <div class="scene-uv" id="scene-uv"></div>

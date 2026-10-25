@@ -663,7 +663,7 @@ function cine(plans, { court = false, musique = null, interphone: inter = false 
     const zm = $("#cine-media"), txt = $("#cine-texte"), suite = $("#cine-suite");
     $("#cine").classList.toggle("interphone", inter);
     if (musique) Son.musique(musique);
-    let i = 0, enCours = false;
+    let i = 0, enCours = false, transition = false;
     const montrer = async () => {
       const p = plans[i]; enCours = true; suite.classList.remove("visible");
       zm.innerHTML = ""; if (p.video || p.image) { const m = media(p.video, { image: p.image }); zm.appendChild(m); requestAnimationFrame(() => m.classList.add("visible")); }
@@ -678,9 +678,10 @@ function cine(plans, { court = false, musique = null, interphone: inter = false 
     };
     const avancer = () => {
       if (enCours) { Son.couperVoix(); return; }
+      if (transition) return;   // un double clic pendant le fondu sautait un plan et plantait la cinématique
       i++;
       if (i >= plans.length) { document.removeEventListener("keydown", clavier); $("#cine").onclick = null; txt.classList.remove("visible"); fin(); return; }
-      txt.classList.remove("visible"); setTimeout(montrer, 450);
+      transition = true; txt.classList.remove("visible"); setTimeout(() => { transition = false; montrer(); }, 450);
     };
     const clavier = e => { if (e.key === " " || e.key === "Enter" || e.key === "ArrowRight") { e.preventDefault(); avancer(); } };
     document.addEventListener("keydown", clavier);
@@ -805,7 +806,7 @@ async function fin(type) {
   ecranFin();
 }
 function ecranFin() {
-  ecran("fin"); const F = J.RECIT.fins[S.typeFin];
+  ecran("fin"); $("#fin").dataset.fin = S.typeFin; const F = J.RECIT.fins[S.typeFin];
   $("#fin-titre").textContent = F.titre;
   $("#fin-rapport").innerHTML = J.RECIT.rapport.map(l => `<li>${l}</li>`).join("");
   const toutes = Object.entries(J.CARTES).filter(([, c]) => c.preuve).map(([n]) => +n), trouvees = toutes.filter(n => S.main.includes(n) || S.defausse.includes(n));
@@ -821,6 +822,7 @@ $("#b-chapitre").onclick = () => { const p = S.point; S = JSON.parse(JSON.string
 
 // ——————————————————————————————————————————————— Démarrage
 $("#titre-version").textContent = AD ? "version audiodescription" : "version son";
+$("#b-comment").onclick = () => $("#b-aide").onclick();
 document.body.classList.add(AD ? "v-ad" : "v-son");
 const sauve = charger();
 if (sauve && sauve.etape !== "fin") $("#b-reprendre").hidden = false;
