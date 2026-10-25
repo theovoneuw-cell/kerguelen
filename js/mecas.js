@@ -392,8 +392,8 @@
   M.ramper2 = async (A) => {
     const sc = scene("s-ramper", `<div class="rp-img"></div><div class="rp-tete"></div><p class="rp-texte"></p>`);
     const img = $(".rp-img", sc), txt = $(".rp-texte", sc), tete = $(".rp-tete", sc);
-    img.style.backgroundImage = `url('${A.RACINE}img/l-conduit-jonction.jpg')`;
-    txt.textContent = "La jonction 31. Encore un coude, et ce sera le labo."; txt.classList.add("visible");
+    img.style.backgroundImage = `url('${A.RACINE}img/l-conduit-long.jpg')`; img.style.transform = "scale(1.1)";
+    txt.textContent = "Le conduit 55. Tout au bout, une grille, et de la lumière froide : le labo."; txt.classList.add("visible");
     await A.attendre(3500);
     if (A.VIDEOS.has("v-tete")) { const m = A.media("v-tete"); m.classList.add("rp-video"); sc.appendChild(m); await A.attendre(4200); m.remove(); }
     else { tete.style.backgroundImage = `url('${A.RACINE}img/b-tete.jpg')`; tete.classList.add("passe"); Son.jouer("BETE_CLICS"); await A.attendre(1400); }

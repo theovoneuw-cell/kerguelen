@@ -6,6 +6,7 @@
   "use strict";
   const AD = document.body.dataset.version !== "son";
   const RACINE = document.body.dataset.racine || "";
+  const SONS = document.body.dataset.sons || `${RACINE}media/son/`;
   const MEDIAS = new Set(G.__MEDIAS || []);
   let ctx = null, maitre = null, busMus = null, busAmb = null, busSfx = null, busVoix = null, coupe = false;
   let J = null;
@@ -25,7 +26,7 @@
   async function tampon(code) {
     if (!MEDIAS.has(code)) return null;
     if (tampons.has(code)) return tampons.get(code);
-    const p = fetch(`${RACINE}media/son/${code}.mp3`).then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => ctx.decodeAudioData(b)).catch(() => null);
+    const p = fetch(`${SONS}${code}.mp3`).then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => ctx.decodeAudioData(b)).catch(() => null);
     tampons.set(code, p); return p;
   }
   function lireTampon(buf, bus, { gain = 1, boucle = false, pan = 0 } = {}) {

@@ -13,7 +13,8 @@ export function nouveauCode() {
 }
 
 export function lienTelephone(code) {
-  const u = new URL(document.body.dataset.version === 'son' ? '../tel.html' : 'tel.html', location.href);
+  // La version son tourne en local : ses téléphones passent par la page publique.
+  const u = new URL(document.body.dataset.tel || 'tel.html', location.href);
   u.search = ''; u.hash = '';
   u.searchParams.set('s', code);
   return u.href;

@@ -338,8 +338,8 @@ body.secousse .ecran.actif, body.secousse .speciale { animation: secousse .45s; 
 .uv-camera .uv-num { color: rgb(56,56,60); text-shadow: none; }
 .s-ramper { grid-template-rows: 1fr; }
 .rp-img { position: absolute; inset: 0; background: center/cover no-repeat; transition: transform 6s ease-out; filter: brightness(.7); }
-.rp-tete { position: absolute; left: 48%; top: 42%; width: 16%; height: 22%; background: center/cover no-repeat; opacity: 0; filter: brightness(.5); }
-.rp-tete.passe { animation: passe 1.3s ease-in-out; } @keyframes passe { 0% { opacity: 0; transform: translateX(-120%); } 40%, 60% { opacity: .85; } 100% { opacity: 0; transform: translateX(120%); } }
+.rp-tete { position: absolute; left: 44%; top: 40%; width: 13%; aspect-ratio: 16/9; background: center 30%/cover no-repeat; opacity: 0; filter: brightness(.55) contrast(1.2) blur(.4px); -webkit-mask-image: radial-gradient(ellipse 50% 50% at center, #000 40%, transparent 72%); mask-image: radial-gradient(ellipse 50% 50% at center, #000 40%, transparent 72%); }
+.rp-tete.passe { animation: passe 1.5s cubic-bezier(.5,0,.5,1); } @keyframes passe { 0% { opacity: 0; transform: translateX(-90%) scale(.9); } 35% { opacity: .9; } 55% { opacity: .9; transform: translateX(10%) scale(1); } 100% { opacity: 0; transform: translateX(110%) scale(.95); } }
 .rp-texte { position: absolute; left: 50%; bottom: 12vh; transform: translateX(-50%); width: min(720px, 88vw); text-align: center; font-size: 1.25rem; opacity: 0; transition: opacity .8s; text-shadow: 0 1px 10px #000; }
 .rp-texte.visible { opacity: 1; }
 .rp-video { position: absolute; inset: 0; }
