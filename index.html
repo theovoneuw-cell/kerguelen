@@ -89,7 +89,7 @@
             <div><dt>Le Manuel de bord</dt><dd>Les procédures, les plans, les tableaux. Celui qui l'a lit à voix haute ; il ne montre pas son écran.</dd></div>
             <div><dt>Le Détecteur de mouvement</dt><dd>Il bipe quand la bête approche. Mais ses bips font du bruit : pour le faire taire, on le pose face contre la table.</dd></div>
           </dl>
-          <p class="petit">Autorisez le <b>micro</b> et les <b>mouvements</b> quand on vous le demande : pendant les silences, le vaisseau doit entendre votre pièce. Rien n'est enregistré ni envoyé.</p>
+          <p class="petit">Autorisez le <b>micro</b> et les <b>mouvements</b> quand on vous le demande : le vaisseau doit entendre votre pièce. Rien n'est enregistré ni envoyé.</p>
           <ul class="liste-tels" id="liste-tels"><li class="vide">Aucun téléphone pour l'instant.</li></ul>
           <div class="essai-micro" id="essai-micro" hidden>
             <p><b>Essai du silence.</b> Faites du bruit, puis taisez-vous : la jauge doit retomber.</p>
@@ -108,8 +108,8 @@
         <div class="regle"><span class="regle-ico ico-num">17</span><p><b>Les numéros cachés.</b> Des numéros sont peints dans le décor. Tapez-en un dans <i>Prendre</i> pour ramasser la carte. Fouiller au hasard fait du bruit.</p></div>
         <div class="regle"><span class="regle-ico ico-plus">+</span><p><b>Combiner.</b> Glissez une carte sur une autre pour les utiliser ensemble. Touchez une carte pour l'ouvrir : certaines se manipulent.</p></div>
         <div class="regle"><span class="regle-ico ico-dossier"></span><p><b>L'enquête.</b> Le <i>Dossier</i> rassemble les suspects et les preuves trouvées. À la fin, il faudra désigner un coupable devant VIGIE.</p></div>
-        <div class="regle"><span class="regle-ico ico-bruit"></span><p><b>Le bruit.</b> La bête est aveugle et chasse au son. Chaque erreur fait du bruit et l'attire. <b>Entre les silences, parlez librement</b> : réfléchir à voix haute fait partie du jeu. Surveillez le détecteur avant d'entrer quelque part.</p></div>
-        <div class="regle"><span class="regle-ico ico-silence"></span><p><b>Le silence.</b> Quand elle approche, l'écran annonce <b>SILENCE</b> et compte trois secondes : <b>taisez-vous jusqu'à ce qu'elle s'éloigne</b>. Le micro n'écoute qu'à ce moment-là. Au premier bruit elle s'arrête et tend l'oreille ; au deuxième, elle vous a trouvés.</p></div>
+        <div class="regle"><span class="regle-ico ico-bruit"></span><p><b>Le bruit.</b> La bête est aveugle et chasse au son. Chaque erreur fait du bruit et l'attire. <b>Le micro écoute la pièce</b>, mais tant qu'elle est loin, vous pouvez parler normalement. Quand elle approche sur le radar, il devient plus sensible : <b>parlez bas</b>, puis <b>chuchotez</b> quand elle est à côté. L'écran l'indique à côté de la jauge.</p></div>
+        <div class="regle"><span class="regle-ico ico-silence"></span><p><b>Le silence.</b> Quand elle approche, l'écran annonce <b>SILENCE</b> et compte trois secondes : <b>taisez-vous jusqu'à ce qu'elle s'éloigne</b>. Là, plus un mot. Au premier bruit elle s'arrête et tend l'oreille ; au deuxième, elle vous a trouvés.</p></div>
       </div>
       <p class="petit">Le temps presse : 90 minutes avant le départ du vaisseau vers la Terre. Bloqués ? <i>Indices</i> en donne trois par énigme, du plus discret à la solution ; chacun coûte deux minutes. Trois rencontres avec la bête, et c'est fini.</p>
       <div class="accueil-nav"><button class="btn" data-suite="2">Retour</button><button class="btn btn-principal" data-suite="4">Suivant</button></div>
@@ -147,7 +147,7 @@
     <div class="chapitre"><span class="chap-num" id="chap-num"></span><span class="chap-titre" id="chap-titre"></span></div>
     <p class="objectif" id="objectif"></p>
     <div class="jauges">
-      <div class="bruit" title="Bruit"><span class="j-nom">Bruit</span><div class="bruit-barre"><i id="bruit"></i></div></div>
+      <div class="bruit" title="Bruit"><span class="j-tol" id="j-tol" hidden></span><span class="j-nom">Bruit</span><div class="bruit-barre"><i id="bruit"></i></div></div>
       <div class="rencontres" id="rencontres" title="Rencontres avec la bête"><i></i><i></i><i></i></div>
       <div class="chrono" id="chrono" title="Temps avant le départ vers la Terre">90:00</div>
     </div>

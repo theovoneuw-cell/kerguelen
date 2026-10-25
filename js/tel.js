@@ -118,8 +118,9 @@ setInterval(() => {
   if (!silenceOn) { historique.push(db); if (historique.length > 60) historique.shift(); }
   let depasse = false;
   if (silenceOn) {
-    if (db > seuil) depasses++; else depasses = 0;
-    depasse = depasses >= 3;
+    // Un bruit doit durer un demi-seconde pour compter, et le téléphone ne s'entend pas biper lui-même.
+    if (db > seuil && performance.now() - dernierBip > 300) depasses++; else depasses = 0;
+    depasse = depasses >= 5;
     $("#silence-niveau").style.width = Math.max(0, Math.min(100, (db + 80) * 1.25)) + "%";
     if (depasse) vibrer(200);
   }
@@ -140,7 +141,7 @@ function instrument(d) {
   if (d.nom === "uv" && !d.on) fermerCamera();
   if (d.nom === "silence") {
     silenceOn = !!d.on; depasses = 0;
-    seuil = Math.max(fond() + 14, -58);
+    seuil = Math.max(fond() + 18, -50);
     $("#silence-seuil").style.left = Math.max(0, Math.min(100, (seuil + 80) * 1.25)) + "%";
     montrer("ins-silence", d.on); document.body.classList.toggle("en-silence", silenceOn);
     $("#sil-det").hidden = !(silenceOn && detecteurActif && (role === "detecteur" || role === "deux"));
@@ -191,10 +192,11 @@ function majDetEtat() {
   const e = $("#det-etat");
   if (!detecteurActif) e.textContent = "Pas de batterie.";
   else if (face) e.textContent = doigt ? "Étouffé : silencieux." : "Face contre table : silencieux.";
-  else e.textContent = donneesDet.cadence ? (donneesDet.cadence < 500 ? "Très proche." : donneesDet.cadence < 1200 ? "Mouvement." : "Mouvement lointain.") : "Rien.";
+  else e.textContent = donneesDet.cadence ? (donneesDet.cadence < 500 ? "Très proche : chuchotez." : donneesDet.cadence < 1200 ? "Mouvement : parlez bas." : "Mouvement lointain.") : "Rien.";
   document.body.classList.toggle("det-actif", detecteurActif);
 }
-function bip(f = 1180, d = .07) { if (!ctx || face) return; const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain(); o.type = "sine"; o.frequency.value = f; g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.35, t + .005); g.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + d + .02); }
+let dernierBip = 0;
+function bip(f = 1180, d = .07) { if (!ctx || face) return; dernierBip = performance.now(); const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain(); o.type = "sine"; o.frequency.value = f; g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.35, t + .005); g.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + d + .02); }
 (function radar() {
   const c = $("#radar"), g = c.getContext("2d"), W = c.width, R = W / 2 - 20;
   const dessin = () => {

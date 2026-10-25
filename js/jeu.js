@@ -73,7 +73,7 @@ function recevoir(id, d) {
   switch (d.t) {
     case "role": t.role = d.role; majTels(); envoyerEtat(id); break;
     case "perm": t.micro = !!d.micro; t.mouvement = !!d.mouvement; majTels(); break;
-    case "niveau": t.db = d.db; t.depasse = d.depasse; ecouterPiece(t, d.db); if ($("#essai-micro") && !$("#essai-micro").hidden) $("#jauge-micro").style.width = Math.max(0, Math.min(100, (d.db + 80) * 1.4)) + "%"; if (silenceEnCours && d.depasse && !Son.occupe()) silenceEnCours.bruit(); break;
+    case "niveau": t.db = d.db; t.depasse = d.depasse; ecouterPiece(t, d.db); if ($("#essai-micro") && !$("#essai-micro").hidden) $("#jauge-micro").style.width = Math.max(0, Math.min(100, (d.db + 80) * 1.4)) + "%"; if (silenceEnCours && d.depasse && !sonDuJeuRecent()) silenceEnCours.bruit(); break;
     case "face": t.face = !!d.bas; break;
     case "manuel": if (S) { S.flags["manuel" + d.niveau] = true; if (d.niveau >= 2) S.flags.fulmar = true; sauver(); } break;
     case "manuels": if (S) { (d.niveaux || []).forEach(i => { S.flags["manuel" + i] = true; if (i >= 2) S.flags.fulmar = true; }); sauver(); } break;
@@ -133,6 +133,7 @@ setInterval(() => {
     S.bete.prochain -= dt * (1 + S.bruit / 60);
     if (S.bete.prochain <= 0) { S.bete.prochain = 16000 + Math.random() * 16000; deplacerBete(); }
   }
+  if (Son.occupe()) dernierSonJeu = t;
   majHaut();
   if (Math.floor(t / 250) % 2 === 0) envoyerDetecteur();
   if (t % 8000 < 300) sauver();
@@ -141,12 +142,33 @@ document.addEventListener("visibilitychange", () => { dernier = performance.now(
 function retirerTemps(min, raison) { if (S.autod) return; S.restant -= min * MIN; if (raison) toast(raison); majHaut(); }
 
 // ——————————————————————————————————————————————— Bruit
-// Le micro des téléphones ne compte que pendant les silences (voir silence()) : le reste du temps, les joueurs parlent librement.
-// On garde seulement le fond de la pièce (20e centile de la dernière minute) pour l'essai du micro.
-let souffleEnCours = false;
+// Les téléphones écoutent la pièce toute la partie, mais la tolérance dépend de la distance de la bête sur le radar :
+// loin, on parle normalement ; à deux sections, il faut parler bas ; à côté, chuchoter. Les silences sont comptés à part (silence()).
+// Le fond de la pièce = 20e centile de la dernière minute. Un bruit ne compte que s'il dure (0,3 s), pour ignorer un objet posé.
+// Le micro est ignoré quand le jeu joue lui-même un son (et un peu après, le temps que le message arrive), et quand on souffle exprès.
+const TOLERANCES = [
+  { db: 24, nom: "Parlez normalement", cls: "" },
+  { db: 16, nom: "Parlez bas", cls: "bas" },
+  { db: 9, nom: "Chuchotez", cls: "chut" }
+];
+function tolerance() {
+  if (!S || !S.bete.active) return TOLERANCES[0];
+  const d = distanceBete();
+  return d <= 1 ? TOLERANCES[2] : d === 2 ? TOLERANCES[1] : TOLERANCES[0];
+}
+let souffleEnCours = false, dernierSonJeu = 0, dernierEntendu = 0;
+const sonDuJeuRecent = () => Son.occupe() || performance.now() - dernierSonJeu < 900;
 function ecouterPiece(t, db) {
   const h = t.hist || (t.hist = []); h.push(db); if (h.length > 600) h.shift();
-  if (h.length % 10 === 1) { const tri = [...h].sort((a, b) => a - b); t.fond = tri[Math.floor(tri.length * .2)]; }
+  if (h.length % 10 === 1) { const tri = [...h].sort((a, b) => a - b); t.fond = Math.max(tri[Math.floor(tri.length * .2)], -70); }
+  if (!S || S.etape !== "jeu" || enPause || document.hidden || silenceEnCours || souffleEnCours || h.length < 50) { t.duree = 0; return; }
+  if (!(tableActive() || !$("#speciale").hidden) || sonDuJeuRecent()) { t.duree = 0; return; }
+  const exces = db - t.fond - tolerance().db;
+  if (exces <= 0) { t.duree = 0; return; }
+  if (++t.duree < 3) return;
+  ajouterBruit(Math.min(1.5, .3 + exces * .06), true);
+  const j = $("#j-tol"); j.classList.remove("entendu"); void j.offsetWidth; j.classList.add("entendu");
+  if (performance.now() - dernierEntendu > 20000) { dernierEntendu = performance.now(); toast(tolerance() === TOLERANCES[0] ? "Moins fort… Le vaisseau vous entend." : "Elle est tout près. Elle vous entend."); }
 }
 function ajouterBruit(n, discret) {
   S.bruit = Math.min(100, S.bruit + n); S.bruitMax = Math.max(S.bruitMax, S.bruit);
@@ -388,6 +410,9 @@ function majHaut() {
   $("#chrono").classList.toggle("autod", !!S.autod);
   $("#chrono").classList.toggle("urgent", (S.autod ? S.autod.restant : S.restant) < 5 * MIN);
   $("#bruit").style.width = S.bruit + "%";
+  const tol = tolerance(), jt = $("#j-tol");
+  jt.hidden = !telAvecMicro();
+  if (jt.textContent !== tol.nom) { const avant = TOLERANCES.findIndex(x => x.nom === jt.textContent), plusStrict = avant >= 0 && TOLERANCES.indexOf(tol) > avant; jt.textContent = tol.nom; jt.className = "j-tol " + tol.cls; if (plusStrict && !jt.hidden && S.etape === "jeu") toast(tol === TOLERANCES[2] ? "Elle est tout près : chuchotez." : "Elle approche : parlez bas."); }
   $(".bruit").classList.toggle("haut", S.bruit > 60);
   $$("#rencontres i").forEach((i, k) => i.classList.toggle("plein", k < S.rencontres));
 }

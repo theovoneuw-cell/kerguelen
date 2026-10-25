@@ -174,6 +174,9 @@ body.pret #titre .titre-contenu { --ty: -50%; }
 .objectif::before { content: "Objectif — "; color: var(--doux); }
 .jauges { display: flex; align-items: center; gap: 22px; }
 .bruit { display: flex; align-items: center; gap: 8px; font-size: .82rem; color: var(--doux); }
+.j-tol { font: 600 .72rem var(--f-titre); text-transform: uppercase; letter-spacing: .06em; color: var(--doux); transition: color .3s; }
+.j-tol.bas { color: var(--accent); } .j-tol.chut { color: var(--danger); }
+.j-tol.entendu { animation: entendu 1.1s ease-out; } @keyframes entendu { 0%, 35% { color: var(--danger); text-shadow: 0 0 12px rgba(212,55,44,.7); } }
 .bruit-barre { width: 120px; height: 6px; background: #05070a; border: 1px solid var(--ligne-2); position: relative; }
 .bruit-barre i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--doux); transition: width .25s, background .3s; }
 .bruit.haut .bruit-barre i { background: var(--danger); }
