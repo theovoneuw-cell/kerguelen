@@ -902,6 +902,7 @@ async function fin(type) {
   S.etape = "fin"; S.typeFin = type; sauver();
   $("#speciale").hidden = true; $("#silence").hidden = true; Son.couperVoix();
   const F = J.RECIT.fins[type];
+  if (F.son) Son.jouer(F.son);
   await cine(F.texte.map((t, k) => ({ texte: t, video: k === 0 ? F.video : null, image: k === 0 ? F.image : null })).concat([{ texte: "", voix: F.voix }]), { musique: type === "quarantaine" ? "MUS_FIN" : "MUS_ECHEC" });
   ecranFin();
 }
