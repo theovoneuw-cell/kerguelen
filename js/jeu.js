@@ -18,8 +18,10 @@ const MIN = 60000;
 
 // ——————————————————————————————————————————————— État
 let S = null;
+// Une nouvelle partie a son identifiant dès l'accueil : les téléphones reliés à ce moment referment leur manuel.
+let prochaineId = null;
 function neuf(noms) {
-  return { id: Date.now(), noms, chap: 0, lieu: "sas", precedent: null, ouverts: [], main: [], defausse: [], flags: {}, restant: 90 * MIN, autod: null,
+  return { id: prochaineId || Date.now(), noms, chap: 0, lieu: "sas", precedent: null, ouverts: [], main: [], defausse: [], flags: {}, restant: 90 * MIN, autod: null,
     bruit: 0, bruitMax: 0, rencontres: 0, indices: {}, journal: [], bete: { pos: "condB", active: false, prochain: 30000 }, etape: "jeu", nouv: [], annonces: {}, vus: {} };
 }
 const sauver = () => { if (!S) return; try { localStorage.setItem(CLE_SAUVE, JSON.stringify(S)); } catch (_) {} };
@@ -83,7 +85,7 @@ function recevoir(id, d) {
 const telsDet = () => [...tels.entries()].filter(([, t]) => t.role === "detecteur" || t.role === "deux");
 function envoyerEtat(id) {
   if (!hote) return;
-  const m = { t: "etat", detecteur: !!(S && S.flags.detecteur), chap: S ? S.chap : -1, noms: S ? S.noms : [], partie: S ? S.id || null : null };
+  const m = { t: "etat", detecteur: !!(S && S.flags.detecteur), chap: S ? S.chap : -1, noms: S ? S.noms : [], partie: S ? S.id || null : prochaineId };
   if (id) hote.envoyer(id, m); else hote.diffuser(m);
 }
 function instrument(nom, params = {}, cible = null) {
@@ -930,6 +932,7 @@ $("#b-nouvelle").onclick = () => {
   precharger(...J.RECIT.prologue.map(p => p.video).filter(Boolean));
   Son.demarrer();
   if (sauve && sauve.etape !== "fin" && !confirm("Une partie est en cours. La remplacer par une nouvelle ?")) return;
+  prochaineId = Date.now(); envoyerEtat();
   ecran("accueil"); etape(1); ouvrirLiaison(); Son.ambiance("AMB_SAS");
 };
 $("#b-sans-tel").onclick = () => { sansTel = true; window.open(new URL("tel.html?seul=1", location.href).href.replace("/son-", "/son-"), "_blank", "noopener"); toast("Le manuel est ouvert dans une autre fenêtre. Les instruments seront simulés à l'écran."); };

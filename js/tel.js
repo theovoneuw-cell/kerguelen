@@ -56,7 +56,7 @@ if (code && !seul) {
 function partieEcran(id) {
   if (!id) return;
   const avant = localStorage.getItem("krg-manuel-partie");
-  if (avant && avant !== String(id)) { ouverts = []; try { localStorage.setItem("krg-manuel", "[]"); } catch (_) {} rendreManuel(); }
+  if (avant !== String(id) && (avant || ouverts.length)) { ouverts = []; try { localStorage.setItem("krg-manuel", "[]"); } catch (_) {} rendreManuel(); }
   try { localStorage.setItem("krg-manuel-partie", String(id)); } catch (_) {}
   envoyer({ t: "manuels", niveaux: ouverts });
 }
