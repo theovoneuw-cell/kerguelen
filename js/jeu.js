@@ -701,6 +701,12 @@ function entrerTable() { ecran("table"); ambianceLieu(); Son.musique(null); rend
 function ouvrirPorteSas() {
   if (!S.flags.pression) { interphone(["VIGIE_04"]); Son.jouer("SFX_BIP_NON"); return; }
   if (!S.flags.adn) { interphone(["VIGIE_05"]); Son.jouer("SFX_BIP_NON"); return; }
+  // Sans détecteur, toute la suite du jeu est injouable (partie test du 26/10) : la porte l'exige.
+  if (!S.flags.detecteur) {
+    Son.jouer("SFX_BIP_NON");
+    billet(`<div class="doc-ecran">PORTE INTÉRIEURE — SORTIE REFUSÉE<br>CONFINEMENT EN VIGUEUR<br>PROTOCOLE H-I 7 : DÉTECTEUR DE MOUVEMENT<br>EN SERVICE OBLIGATOIRE HORS DU SAS</div><p>Le lecteur a reconnu la carte, mais la porte reste fermée. Il vous faut un détecteur qui fonctionne.</p>`);
+    return;
+  }
   S.flags.porteSas = true; defausser(13); Son.jouer("SFX_PORTE"); rendu(); sauver();
   interphone(["VIGIE_06"]).then(finChapitre1);
 }
@@ -1020,7 +1026,14 @@ $("#b-reprendre").onclick = async () => {
   $("#b-brief").onclick = null;
   toast("Reliez les téléphones, puis reprenez.");
   const b = document.createElement("button"); b.className = "btn btn-principal"; b.textContent = "Reprendre la partie";
-  b.onclick = () => { chapitre(S.chap, { reprise: true }); if (S.autod) Mecas.reprendreChaloupe(api()); };
+  b.onclick = () => {
+    chapitre(S.chap, { reprise: true }); if (S.autod) Mecas.reprendreChaloupe(api());
+    // Parties commencées avant que la porte du sas exige le détecteur : on le rallume pour qu'elles restent jouables.
+    if (S.chap >= 1 && !S.flags.detecteur) {
+      S.flags.detecteur = true; reveler(26); envoyerEtat(); majDetecteurEcran(); rendu(); sauver();
+      billet(`<p>Jo, à l'interphone, a bricolé quelque chose à distance : le <b>détecteur</b> d'Okafor s'est rallumé. Il est dans ce que vous avez ramassé (26).</p><p><b>Le détecteur bipe quand la bête approche. Mais ses bips font du bruit. Retourner le téléphone face contre la table le fait taire.</b></p>`);
+    }
+  };
   $(".accueil-etape[data-etape='2'] .accueil-nav").replaceChildren(b);
 };
 
