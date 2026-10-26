@@ -238,6 +238,10 @@
     lancement(m, z, A) {
       const S = A.S;
       if (!S.flags.cleInseree) { z.appendChild(h(`<p class="m-aide">Les caches sont verrouillés. Il faut d'abord la clé.</p>`)); return; }
+      // Après le réacteur : un seul geste, larguer.
+      if (S.evac) { const b = h(`<button class="btn btn-danger l-larguer">Larguer la chaloupe</button>`); z.appendChild(b); b.onclick = () => { A.fermerCarte(); M.lancer(A); }; return; }
+      // Séquence faite, la Compagnie a bloqué le largage : tant que le Kerguelen ne saute pas, la baie reste fermée.
+      if (S.flags.sequence) { z.appendChild(h(`<div class="doc-ecran">SÉQUENCE DE LANCEMENT : PRÊTE<br>LARGAGE : BLOQUÉ — ORDRE 11-Δ</div><p class="m-aide">La baie restera verrouillée tant que le Kerguelen ne saute pas. Tout dépend de Jo, au réacteur.</p>`)); return; }
       let seq = [];
       // Les interrupteurs portent leur nom, gravé sous le cache ; l'ordre est au manuel (niveau 1, « Lancement de la chaloupe »).
       const NOMS = ["Largage", "Alimentation", "Pressurisation"];
@@ -247,7 +251,7 @@
         const i = +b.dataset.i; if (seq.includes(i)) return;
         if (m.ordre[seq.length] !== i) { A.echec("Alarme de séquence. Les interrupteurs retombent.", 8); seq = []; $$(".inter", el).forEach(x => x.classList.remove("on")); return; }
         seq.push(i); b.classList.add("on"); Son.bips([[600]], { duree: .1 });
-        if (seq.length === 3) { $(".l-code-titre", el).hidden = false; const c = $(".l-code", el); c.hidden = false; clavier(c, 4, v => { if (v === m.code) { A.fermerCarte(); M.lancer(A); return true; } A.echec("Matricule refusé.", 6); return false; }); }
+        if (seq.length === 3) { $(".l-code-titre", el).hidden = false; const c = $(".l-code", el); c.hidden = false; clavier(c, 4, v => { if (v === m.code) { A.fermerCarte(); M.sequence(A); return true; } A.echec("Matricule refusé.", 6); return false; }); }
       });
     },
     drone(m, z, A) {
@@ -461,19 +465,38 @@
     A.sauver();
     await A.chapitre(5);
   };
-  M.reprendreChaloupe = () => {};
+  // Partie reprise au chapitre VI : on rouvre la phase en cours.
+  M.reprendreChaloupe = (A) => {
+    const S = A.S;
+    if (S.reacteur && !S.flags.reacteurOk) { M.reacteur(A); return; }
+    if (S.flags.sequence && !S.autod.annulee) { M.sequence(A); return; }
+    if (S.evac) A.ouvrirCarte(116);
+  };
 
-  // ——— La chaloupe part
+  // ——— La séquence de lancement est faite : la Compagnie bloque le largage et annule l'autodestruction. Jo descend au réacteur.
+  // Le coup de théâtre arrive toujours ici, jamais au milieu d'une autre énigme.
+  M.sequence = async (A) => {
+    const S = A.S;
+    S.flags.sequence = true; A.sauver(); A.rendu();
+    Son.jouer("SFX_BIP_NON");
+    A.billet(`<div class="doc-ecran">SÉQUENCE DE LANCEMENT : PRÊTE<br>LARGAGE : <b>BLOQUÉ</b><br>ORDRE 11-Δ — PRIORITÉ COMPAGNIE</div><p>Les verrous de la baie ne s'ouvrent pas. Au-dessus du pupitre, un message de VIGIE s'affiche.</p>`);
+    await new Promise(r => A.quandBilletsFinis(r));
+    S.autod.annulee = true; A.sauver(); A.rendu();
+    await A.interphone(["VIGIE_18"]);
+    await A.interphone(["BRANDT_09"]);
+    A.billet(`<p><b>Il faut que le Kerguelen saute</b>, sinon la baie ne s'ouvrira jamais. Jo descend au réacteur et vous allez la guider.</p><p>Le manuel de bord, dernier niveau (<b>DÉSOLATION</b>), donne la procédure de surcharge. Jo vous lit le pupitre. <b>Trois minutes.</b> Chaque erreur en coûte quinze secondes.</p>`);
+    await new Promise(r => A.quandBilletsFinis(r));
+    M.reacteur(A);
+  };
+
+  // ——— La chaloupe part (après le réacteur)
   M.lancer = async (A) => {
     const S = A.S;
-    S.flags.lancee = true; A.sauver();
+    S.flags.lancee = true; S.evac = null; A.sauver();
     Son.jouer("SFX_LARGAGE");
     if (S.rencontres >= 2) { const ok = await M.ejection(A); if (!ok) return; }
     await A.cine([{ video: "v-chaloupe", image: "c-chaloupe", texte: "La chaloupe se détache du Kerguelen. Par le hublot, la coque immense défile, puis s'éloigne." }]);
-    if (S.flags.reacteurOk) { A.fin("quarantaine"); return; }
-    // On attend le message de la Compagnie, au plus tard vingt-cinq secondes après le départ
-    A.ecran("table"); A.rendreLieu("chaloupe");
-    if (!S.autod.override) S.autod.ecoule = Math.max(S.autod.ecoule, 11 * MIN - 25000);
+    A.fin("quarantaine");
   };
 
   // ——— L'éjection du passager clandestin
@@ -494,56 +517,64 @@
     return true;
   };
 
-  // ——— Le message de la Compagnie, et le réacteur
-  M.override = async (A) => {
-    const S = A.S;
-    await A.interphone(["VIGIE_18"]);
-    await A.interphone(["BRANDT_09"]);
-    M.reacteur(A);
-  };
+  // ——— Le réacteur : Jo descend, les joueurs la guident avec le manuel (niveau 5). Son chrono (S.reacteur) est celui du haut de l'écran.
   M.reacteur = (A) => {
     const S = A.S;
+    if (!S.reacteur) { S.reacteur = { restant: 3 * MIN }; A.sauver(); }
     const sc = scene("s-reacteur", `<div class="re-img"></div>
       <div class="re-jauges"><div class="re-aig" data-a="1"><b>1</b><span></span></div><div class="re-aig" data-a="2"><b>2</b><span></span></div><div class="re-aig" data-a="3"><b>3</b><span></span></div><div class="re-voyant"><b>Voyant</b><span></span></div></div>
+      <ol class="re-etapes"><li data-e="1">La vanne, selon l'aiguille 1</li><li data-e="2">Les leviers, selon le voyant</li><li data-e="3">La surcharge, quand les aiguilles 2 et 3 sont dans le rouge</li></ol>
+      <p class="re-mot"><span>Jo, à l'interphone</span> « Le manuel, dernier niveau. Le mot, c'est <b>DÉSOLATION</b>. »</p>
       <div class="re-commandes"><div class="re-vanne"><b>Vanne</b><button class="btn" data-v="fermer">Fermer</button><button class="btn" data-v="ouvrir">Ouvrir</button></div>
       <div class="re-leviers"><b>Leviers</b>${[1, 2, 3, 4].map(k => `<button class="btn levier" data-l="${k}">${k}</button>`).join("")}</div>
       <div class="re-surcharge"><button class="btn btn-danger re-bouton">Surcharge (maintenir)</button></div></div>
-      <div class="re-temps"><span>Jo</span><i></i></div>`);
+      <div class="re-temps"><span>Réacteur</span><i></i><b class="re-chrono"></b></div>`);
     $(".re-img", sc).style.backgroundImage = `url('${A.RACINE}img/l-reacteur.jpg')`;
-    // Le mot du niveau 5 n'est dit qu'une fois, par Jo : il reste affiché pendant toute la scène.
-    sc.insertBefore(h(`<p class="re-mot"><span>Jo, à l'interphone</span> « Le manuel, dernier niveau. Le mot, c'est <b>DÉSOLATION</b>. »</p>`), $(".re-commandes", sc));
-    let etape = 1, leviers = [], fini = false, debut = performance.now(), DUREE = 150000;
+    let etape = 1, leviers = [], fini = false;
     const aig = { 1: "rouge", 2: "vert", 3: "vert" }, voy = "orange clignotant";
-    const maj = () => { $$(".re-aig", sc).forEach(a => { const k = a.dataset.a; $("span", a).textContent = aig[k]; a.classList.toggle("rouge", aig[k] === "rouge"); }); $(".re-voyant span", sc).textContent = etape >= 2 ? voy : "—"; $(".re-voyant", sc).classList.toggle("clignote", etape >= 2); sc.dataset.etape = etape; };
+    const maj = () => {
+      $$(".re-aig", sc).forEach(a => { const k = a.dataset.a; $("span", a).textContent = aig[k]; a.classList.toggle("rouge", aig[k] === "rouge"); });
+      $(".re-voyant span", sc).textContent = etape >= 2 ? voy : "—"; $(".re-voyant", sc).classList.toggle("clignote", etape >= 2); sc.dataset.etape = etape;
+      $$(".re-etapes li", sc).forEach(li => { const e = +li.dataset.e; li.classList.toggle("faite", e < etape); li.classList.toggle("ici", e === etape); });
+      $$(".levier", sc).forEach(b => b.classList.toggle("tire", leviers.includes(+b.dataset.l)));
+    };
     maj();
     A.interphone(["BRANDT_10", "BRANDT_11"]);
-    const rate = (msg) => { A.interphone(["BRANDT_16"]); A.toast(msg); leviers = []; };
+    // Une erreur coûte quinze secondes (et Jo le dit) ; on ne perd jamais tout d'un coup.
+    const rate = (msg) => { S.reacteur.restant = Math.max(1000, S.reacteur.restant - 15000); A.interphone(["BRANDT_16"]); A.toast(`${msg} Quinze secondes perdues.`); Son.jouer("SFX_BIP_NON"); leviers = []; maj(); };
     $$("[data-v]", sc).forEach(b => b.onclick = () => {
       if (etape !== 1) return;
-      if (b.dataset.v === "fermer") { etape = 2; Son.jouer("SFX_COFFRE"); maj(); A.interphone(["BRANDT_12"]); } else rate("Ce n'était pas ça.");
+      if (b.dataset.v === "fermer") { etape = 2; Son.jouer("SFX_COFFRE"); maj(); A.interphone(["BRANDT_12"]); } else rate("La pression grimpe : ce n'était pas la bonne manœuvre.");
     });
     $$(".levier", sc).forEach(b => b.onclick = () => {
-      if (etape !== 2) return;
-      const ordre = [3, 1, 4, 2]; leviers.push(+b.dataset.l); b.classList.add("tire");
-      if (leviers[leviers.length - 1] !== ordre[leviers.length - 1]) { $$(".levier", sc).forEach(x => x.classList.remove("tire")); rate("Les leviers retombent."); return; }
-      Son.jouer("SFX_CASIER");
+      if (etape !== 2 || leviers.includes(+b.dataset.l)) return;
+      const ordre = [3, 1, 4, 2]; leviers.push(+b.dataset.l);
+      if (leviers[leviers.length - 1] !== ordre[leviers.length - 1]) { rate("Les leviers retombent."); return; }
+      Son.jouer("SFX_CASIER"); maj();
       if (leviers.length === 4) { etape = 3; maj(); Son.jouer("SFX_FOUR"); A.interphone(["BRANDT_13"]); setTimeout(() => { aig[2] = "rouge"; maj(); }, 7000); setTimeout(() => { aig[3] = "rouge"; maj(); A.interphone(["BRANDT_14"]); }, 15000); }
     });
     tenir($(".re-bouton", sc), 5000, () => {
-      if (etape !== 3) return;
+      if (etape !== 3) { rate("Trop tôt : la surcharge vient en dernier."); return; }
       if (aig[2] !== "rouge" || aig[3] !== "rouge") { rate("Trop tôt : une seule aiguille est dans le rouge."); return; }
       gagner();
     }, true);
-    const barre = $(".re-temps i", sc);
-    const t = setInterval(() => { const p = 1 - (performance.now() - debut) / DUREE; barre.style.width = Math.max(0, p * 100) + "%"; if (p <= .35 && !sc.dataset.proche) { sc.dataset.proche = 1; Son.jouer("BETE_RACLE"); } if (p <= 0 && !fini) { fini = true; clearInterval(t); finScene(); A.fin("gateway"); } }, 200);
+    const fmt = ms => `${Math.floor(ms / MIN)}:${String(Math.floor(ms % MIN / 1000)).padStart(2, "0")}`;
+    const barre = $(".re-temps i", sc), chrono = $(".re-chrono", sc);
+    const t = setInterval(() => {
+      if (fini || A.S.etape === "fin" || !S.reacteur) { clearInterval(t); return; }
+      const ms = S.reacteur.restant, p = ms / (3 * MIN);
+      barre.style.width = Math.max(0, p * 100) + "%"; chrono.textContent = fmt(Math.max(0, ms));
+      if (p <= .35 && !sc.dataset.proche) { sc.dataset.proche = 1; Son.jouer("BETE_RACLE"); }
+    }, 200);
     const gagner = async () => {
       if (fini) return; fini = true; clearInterval(t);
+      S.flags.reacteurOk = true; S.reacteur = null; A.sauver();   // le chrono du réacteur s'arrête là
       await A.interphone(["BRANDT_15"]); Son.jouer("BETE_CRI"); await A.attendre(800);
-      finScene(); S.flags.reacteurOk = true; A.sauver();
+      finScene();
+      S.evac = { restant: 60000 }; A.sauver(); A.rendu();
       await A.interphone(["VIGIE_28"]);
-      if (S.flags.lancee) { A.fin("quarantaine"); return; }
-      S.autod.restant = Math.min(S.autod.restant, 60000);
-      A.billet("<b>Soixante secondes.</b> Le réacteur va sauter. Lancez la chaloupe.");
+      A.billet("<b>Soixante secondes.</b> Le réacteur va sauter et la baie de la chaloupe est déverrouillée. Larguez !");
+      A.quandBilletsFinis(() => { if (S.evac) A.ouvrirCarte(116); });
     };
   };
 

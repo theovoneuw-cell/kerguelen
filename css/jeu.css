@@ -214,6 +214,9 @@ body.pret #titre .titre-contenu { --ty: -50%; }
 .chrono { font-family: var(--f-ecran); font-size: 1.35rem; color: var(--texte); letter-spacing: .04em; }
 .chrono.urgent { color: var(--danger); animation: clignote 1s steps(2) infinite; }
 .chrono.autod { color: var(--danger); }
+/* Au chapitre VI, le chrono dit ce qu'il compte : autodestruction, réacteur, évacuation. */
+.chrono[data-nom] { display: grid; justify-items: end; line-height: 1.1; }
+.chrono[data-nom]::before { content: attr(data-nom); font: 500 .62rem var(--f-titre); text-transform: uppercase; letter-spacing: .03em; color: var(--doux); }
 @keyframes clignote { 50% { opacity: .45; } }
 
 .plan-jeu { position: absolute; inset: 0; }
@@ -448,6 +451,7 @@ body.plein .plein-global { display: none !important; }
 #fin[data-fin="quarantaine"] { --fin-lueur: rgba(220,236,238,.22); --fin-image: url("../img/c-chaloupe.jpg"); }
 #fin[data-fin="gateway"] { --fin-lueur: rgba(60,120,135,.3); --fin-image: url("../img/c-gateway.jpg"); }
 #fin[data-fin="silence"] { --fin-lueur: rgba(212,55,44,.34); --fin-image: url("../img/b-tete.jpg"); }
+#fin[data-fin="abord"] { --fin-lueur: rgba(240,236,220,.26); --fin-image: url("../img/c-vaisseau.jpg"); }
 .fin-boite { width: min(860px, 94vw); max-height: 94vh; overflow: auto; padding: 30px 6px; animation: entre-doc 1.2s var(--sortie) both; }
 .fin-sur { display: none; }
 #fin-titre { font: 200 clamp(3rem, 7vw, 5.6rem)/1 var(--f-titre); text-transform: uppercase; letter-spacing: .02em; color: var(--texte); margin: 0 0 .5em; }
@@ -526,7 +530,14 @@ body.secousse .ecran.actif, body.secousse .speciale { animation: secousse .45s; 
 .fu-titre { font: 700 5rem var(--f-titre); color: #ff5a5f; margin: 0; }
 .fu-boutons { display: flex; gap: 16px; justify-content: center; } .fu-boutons .btn { font-size: 1.2rem; padding: .8em 1.4em; }
 .fu-temps { width: 360px; height: 4px; background: #300; margin: 0 auto; } .fu-temps i { display: block; height: 100%; width: 100%; background: #ff5a5f; }
-.s-reacteur { grid-template-rows: 1fr auto auto auto; }
+.s-reacteur { grid-template-rows: auto 1fr auto auto auto; }
+/* Les trois étapes de la surcharge, cochées au fur et à mesure */
+.re-etapes { position: relative; align-self: start; justify-self: start; margin: 0 18px; padding: 10px 14px 10px 34px; background: rgba(5,8,11,.82); border: 1px solid var(--ligne-2); font-size: .92rem; color: var(--doux); display: grid; gap: 4px; }
+.re-etapes li.ici { color: var(--texte); font-weight: 600; }
+.re-etapes li.ici::marker { color: var(--accent); }
+.re-etapes li.faite { color: var(--pale); text-decoration: line-through; text-decoration-color: var(--vigie); }
+.re-chrono { font: 500 1.05rem var(--f-ecran); color: #ff9b9e; min-width: 3.2em; text-align: right; }
+.l-larguer { width: 100%; padding: 1em; font-size: 1.1rem; }
 .re-img { position: absolute; inset: 0; background: center/cover no-repeat; filter: brightness(.6); }
 .re-jauges { position: relative; display: flex; gap: 12px; padding: 18px; align-self: start; flex-wrap: wrap; }
 .re-aig, .re-voyant { background: rgba(0,0,0,.72); border: 1px solid var(--ligne-2); padding: 8px 14px; font-family: var(--f-ecran); }

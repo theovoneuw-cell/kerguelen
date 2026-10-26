@@ -109,13 +109,20 @@ setInterval(() => {
   if (!S || S.etape !== "jeu" || enPause || document.hidden) return;
   const actif = tableActive() || !$("#speciale").hidden;
   if (!actif) return;
-  if (S.autod) {
+  // Chapitre VI : un seul chrono à la fois, celui de la phase en cours (voir chronoActif).
+  // 1. l'autodestruction, pour rejoindre la chaloupe ; 2. le réacteur, quand la Compagnie l'a annulée ; 3. l'évacuation, soixante secondes.
+  if (S.evac) {
+    S.evac.restant -= dt;
+    if (S.evac.restant <= 0) { S.evac.restant = 0; fin("abord"); return; }
+  } else if (S.reacteur) {
+    S.reacteur.restant -= dt;
+    if (S.reacteur.restant <= 0) { S.reacteur.restant = 0; fin("gateway"); return; }
+  } else if (S.autod && !S.autod.annulee) {
     S.autod.restant -= dt; S.autod.ecoule += dt;
     if (!S.autod.dix && S.autod.restant <= 10 * MIN) { S.autod.dix = true; dire("VIGIE_24"); }
     if (!S.autod.cinq && S.autod.restant <= 5 * MIN) { S.autod.cinq = true; dire("VIGIE_25"); }
-    if (!S.autod.override && S.autod.ecoule >= 11 * MIN) { S.autod.override = true; Mecas.override(api()); }
-    if (S.autod.restant <= 0 && !S.flags.reacteurOk) { S.autod.restant = 0; fin(S.flags.lancee ? "gateway" : "silence"); return; }
-  } else if (tableActive()) {
+    if (S.autod.restant <= 0) { S.autod.restant = 0; fin("abord"); return; }
+  } else if (!S.autod && tableActive()) {
     S.restant -= dt;
     for (const [min, code] of [[60, "VIGIE_07"], [45, "VIGIE_08"], [30, "VIGIE_09"], [15, "VIGIE_10"], [5, "VIGIE_11"]])
       if (S.restant <= min * MIN && !S.annonces[code]) { S.annonces[code] = true; if (S.restant > (min - 1) * MIN) dire(code); }
@@ -413,14 +420,32 @@ function interphone(codes, { journal = true } = {}) {
 }
 
 // ——————————————————————————————————————————————— Rendu de la table
+function chronoActif() {
+  if (S.evac) return { ms: S.evac.restant, nom: "Évacuation" };
+  if (S.reacteur) return { ms: S.reacteur.restant, nom: "Réacteur" };
+  if (S.autod && !S.autod.annulee) return { ms: S.autod.restant, nom: "Autodestruction" };
+  if (S.autod) return { ms: 0, nom: "Autodestruction annulée" };
+  return { ms: S.restant, nom: "Départ vers la Terre" };
+}
+// Chapitre VI : l'objectif suit les étapes, pour qu'on sache toujours ce qui reste à faire.
+function objectifChaloupe() {
+  if (S.evac) return "Larguer la chaloupe. Maintenant.";
+  if (S.reacteur) return "Guider Jo dans la surcharge du réacteur (manuel, niveau 5).";
+  if (!S.flags.leurre) return "Atteindre la chaloupe : la bête garde la coursive D.";
+  if (!S.flags.cle) return "Trouver la clé de la chaloupe.";
+  if (!S.flags.sequence) return "Lancer la chaloupe : procédure au manuel, niveau 1.";
+  return "Quitter le Kerguelen.";
+}
 function majHaut() {
   if (!S) return;
   const c = chap();
   $("#chap-num").textContent = c.num; $("#chap-titre").textContent = c.titre;
-  $("#objectif").textContent = S.objectif || c.objectif;
-  $("#chrono").textContent = S.autod ? fmt(S.autod.restant) : fmt(S.restant);
-  $("#chrono").classList.toggle("autod", !!S.autod);
-  $("#chrono").classList.toggle("urgent", (S.autod ? S.autod.restant : S.restant) < 5 * MIN);
+  $("#objectif").textContent = S.objectif || (S.chap === 5 && S.autod ? objectifChaloupe() : c.objectif);
+  const ch = chronoActif();
+  $("#chrono").textContent = ch.nom === "Autodestruction annulée" ? "--:--" : fmt(ch.ms); $("#chrono").title = ch.nom;
+  if (ch.nom === "Départ vers la Terre") delete $("#chrono").dataset.nom; else $("#chrono").dataset.nom = ch.nom;
+  $("#chrono").classList.toggle("autod", ch.nom !== "Départ vers la Terre");
+  $("#chrono").classList.toggle("urgent", ch.ms < (ch.nom === "Autodestruction" || ch.nom === "Départ vers la Terre" ? 5 * MIN : 30000));
   $("#bruit").style.width = S.bruit + "%";
   const tol = tolerance(), jt = $("#j-tol");
   jt.hidden = !telAvecMicro();
