@@ -308,8 +308,13 @@ async function rencontre({ fuir = true } = {}) {
   S.rencontres++;
   const el = $("#rencontre"); el.innerHTML = "";
   const m = media(VIDEOS.has("v-rencontre") ? "v-rencontre" : null, { image: "b-tete" }); el.appendChild(m);
-  el.hidden = false; flash("#fff"); Son.jouer("BETE_CRI"); document.body.classList.add("secousse");
-  await attendre(VIDEOS.has("v-rencontre") ? 3800 : 1600);
+  el.hidden = false;
+  // Le plan dure 5 s : elle écoute, oreilles tendues, pendant 3 s, puis charge. Le cri part avec l'élan, le flash quand elle atteint l'objectif.
+  if (VIDEOS.has("v-rencontre")) {
+    Son.jouer("BETE_CLICS"); await attendre(3000);
+    Son.jouer("BETE_CRI"); document.body.classList.add("secousse"); await attendre(1600);
+    flash("#fff"); await attendre(400);
+  } else { flash("#fff"); Son.jouer("BETE_CRI"); document.body.classList.add("secousse"); await attendre(1600); }
   document.body.classList.remove("secousse"); el.hidden = true; el.innerHTML = "";
   S.bruit = 0; retirerTemps(3);
   if (S.rencontres >= 3) { rencontreEnCours = false; fin("silence"); return; }
@@ -721,7 +726,7 @@ function precharger(...noms) {
 }
 // Les vidéos sont déjà étalonnées dans le fichier (scripts/poser-videos.sh) : pas de filtre CSS dessus, il les faisait saccader.
 // ?v= change à chaque nouvel encodage, pour ne pas mélanger un ancien fichier en cache et le nouveau CSS.
-const srcVideo = n => `${RACINE}media/video/${n}.mp4?v=60i`;
+const srcVideo = n => `${RACINE}media/video/${n}.mp4?v=2610`;
 function media(nom, { boucle = false, image = null } = {}) {
   const box = document.createElement("div"); box.className = "media";
   if (nom && VIDEOS.has(nom)) {
@@ -741,10 +746,15 @@ function cine(plans, { court = false, musique = null, interphone: inter = false 
     const zm = $("#cine-media"), txt = $("#cine-texte"), suite = $("#cine-suite");
     $("#cine").classList.toggle("interphone", inter);
     if (musique) Son.musique(musique);
-    let i = 0, enCours = false, transition = false;
+    let i = 0, enCours = false, transition = false, finVideo = false;
     const montrer = async () => {
-      const p = plans[i]; enCours = true; suite.classList.remove("visible");
-      zm.innerHTML = ""; if (p.video || p.image) { const m = media(p.video, { image: p.image }); zm.appendChild(m); requestAnimationFrame(() => m.classList.add("visible")); }
+      const p = plans[i]; enCours = true; finVideo = false; suite.classList.remove("visible");
+      // Jamais d'arrêt sur image : p.boucle fait tourner la vidéo sans fin, p.enchaine passe seul au plan suivant quand elle se termine.
+      zm.innerHTML = ""; if (p.video || p.image) {
+        const m = media(p.video, { image: p.image, boucle: !!p.boucle }); zm.appendChild(m); requestAnimationFrame(() => m.classList.add("visible"));
+        const v = m.querySelector("video"), k = i;
+        if (v && p.enchaine) v.addEventListener("ended", () => { if (i !== k) return; if (enCours) finVideo = true; else avancer(); });
+      }
       if (inter) zm.innerHTML = `<div class="interphone-onde"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>`;
       txt.innerHTML = p.titre ? `<p class="cine-titre-chap">${p.titre}</p>${p.texte || ""}` : (p.texte ? `<p>${p.texte}</p>` : "");
       requestAnimationFrame(() => requestAnimationFrame(() => txt.classList.add("visible")));
@@ -752,7 +762,7 @@ function cine(plans, { court = false, musique = null, interphone: inter = false 
       else await attendre((court ? 1600 : 2400) * (window.__rapide ? .2 : 1));
       enCours = false; suite.classList.add("visible");
       suite.textContent = i < plans.length - 1 ? "Continuer" : (court ? "Commencer" : "Continuer");
-      if (inter && p.voix && i < plans.length - 1) avancer();
+      if ((inter && p.voix && i < plans.length - 1) || finVideo) avancer();
     };
     const avancer = () => {
       if (enCours) { Son.couperVoix(); return; }
@@ -947,7 +957,7 @@ $("#b-brief").onclick = () => {
 };
 $("#b-embarquer").onclick = async () => {
   S.etape = "recit"; sauver(); envoyerEtat();
-  await cine(J.RECIT.prologue.map(p => ({ video: p.video, image: p.image, texte: p.texte })), { musique: "MUS_PROLOGUE" });
+  await cine(J.RECIT.prologue.map(p => ({ video: p.video, image: p.image, texte: p.texte, boucle: p.boucle, enchaine: p.enchaine })), { musique: "MUS_PROLOGUE" });
   await chapitre(0);
 };
 $("#b-reprendre").onclick = async () => {
