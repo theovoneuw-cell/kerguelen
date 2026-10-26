@@ -8,7 +8,7 @@
   const RACINE = document.body.dataset.racine || "";
   const SONS = document.body.dataset.sons || `${RACINE}media/son/`;
   const MEDIAS = new Set(G.__MEDIAS || []);
-  let ctx = null, maitre = null, busMus = null, busAmb = null, busSfx = null, busVoix = null, coupe = false;
+  let ctx = null, maitre = null, busMus = null, busAmb = null, busSfx = null, busVoix = null, anaVoix = null, coupe = false;
   let J = null;
   // Le jeu signale quand il joue lui-même un son : le micro des téléphones ne doit pas le compter comme du bruit des joueurs.
   let occupeJusqu = 0;
@@ -21,7 +21,8 @@
     busMus = ctx.createGain(); busMus.gain.value = .5; busMus.connect(maitre);
     busAmb = ctx.createGain(); busAmb.gain.value = .7; busAmb.connect(maitre);
     busSfx = ctx.createGain(); busSfx.connect(maitre);
-    busVoix = ctx.createGain(); busVoix.connect(maitre);
+    // Les voix passent par un analyseur : l'oscilloscope de l'interphone dessine la vraie voix.
+    busVoix = ctx.createGain(); anaVoix = ctx.createAnalyser(); anaVoix.fftSize = 2048; busVoix.connect(anaVoix); anaVoix.connect(maitre);
   }
 
   // ——— Fichiers
@@ -192,5 +193,5 @@
   function couper(v) { coupe = v; if (maitre) maitre.gain.value = v ? 0 : 1; }
   function volumeMusique(v) { if (busMus) busMus.gain.value = v; }
 
-  G.Son = { AD, init(j) { J = j; }, occupe: () => !AD && !!ctx && !coupe && (performance.now() < occupeJusqu || !!(voixCourante && voixCourante.joue)), demarrer, jouer, ambiance, musique, voix, couperVoix, bips, note, chant: o => (AD ? decrire("BETE_CHANT") : !o && MEDIAS.has("BETE_CHANT") ? jouer("BETE_CHANT") : ctx && !coupe && chant(o)), silence, couper, volumeMusique, decrire, get coupe() { return coupe; }, NOTES };
+  G.Son = { AD, init(j) { J = j; }, analyseurVoix: () => anaVoix, occupe: () => !AD && !!ctx && !coupe && (performance.now() < occupeJusqu || !!(voixCourante && voixCourante.joue)), demarrer, jouer, ambiance, musique, voix, couperVoix, bips, note, chant: o => (AD ? decrire("BETE_CHANT") : !o && MEDIAS.has("BETE_CHANT") ? jouer("BETE_CHANT") : ctx && !coupe && chant(o)), silence, couper, volumeMusique, decrire, get coupe() { return coupe; }, NOTES };
 })(window);

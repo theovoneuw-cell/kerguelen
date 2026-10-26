@@ -156,12 +156,41 @@ body.pret #titre .titre-contenu { --ty: -50%; }
 .cine-suite { position: absolute; right: 4vw; bottom: 5vh; background: rgba(5,8,11,.5); border: 1px solid var(--ligne-2); padding: .6em 1.1em .55em; opacity: 0; transition: opacity .6s, border-color .2s; cursor: pointer; font: 500 .86rem var(--f-titre); text-transform: uppercase; letter-spacing: .03em; }
 .cine-suite:hover { border-color: var(--accent); }
 .cine-suite.visible { opacity: 1; }
+/* ——— Console d'interphone : l'écran cathodique mural de la coursive. La couleur suit celui qui parle
+   (Varek bleu froid, Jo ambre, VIGIE vert) ; sa lueur éclaire la pièce au rythme de la voix. */
+#cine.interphone { background: #020405; }
 #cine.interphone .cine-texte { bottom: 22vh; }
-.interphone-onde { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); display: flex; gap: 6px; align-items: center; height: 80px; }
-.interphone-onde i { width: 5px; height: 8px; background: var(--doux); transition: height .2s; }
-#cine.parle .interphone-onde i { animation: onde .5s ease-in-out infinite alternate; background: var(--texte); }
-#cine.parle .interphone-onde i:nth-child(2n) { animation-delay: .15s; } #cine.parle .interphone-onde i:nth-child(3n) { animation-delay: .3s; }
-@keyframes onde { from { height: 6px; } to { height: 62px; } }
+#cine.interphone .cine-media::after { background: radial-gradient(ellipse 80% 70% at 50% 42%, transparent 40%, rgba(0,0,0,.85) 100%); }
+.icom-halo { position: absolute; left: 50%; top: 42%; width: 120vmax; height: 90vmax; transform: translate(-50%, -50%); background: radial-gradient(closest-side, color-mix(in srgb, var(--icom) 30%, transparent), transparent 70%); opacity: .3; pointer-events: none; transition: background .6s; }
+.icom { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); width: min(960px, 84vw); padding: 14px; background: linear-gradient(180deg, #11191d, #0a1013); border: 1px solid var(--ligne-2); box-shadow: 0 40px 90px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.04); }
+.icom::before, .icom::after { content: ""; position: absolute; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: #1f2b30; box-shadow: inset 0 1px 1px rgba(0,0,0,.8); }
+.icom::before { left: 4px; } .icom::after { right: 4px; }
+.icom-ecran { position: relative; display: grid; grid-template-rows: auto auto 1fr auto; gap: 10px; aspect-ratio: 16 / 7.4; padding: 18px 24px 16px; overflow: hidden; border-radius: 22px / 28px;
+  background: radial-gradient(ellipse at 50% 45%, #0c171b 0%, #060b0d 72%); box-shadow: inset 0 0 70px rgba(0,0,0,.95), inset 0 0 0 1px rgba(255,255,255,.03);
+  font: 400 .78rem/1.3 var(--f-ecran); color: color-mix(in srgb, var(--icom) 70%, #6c8388); text-shadow: 0 0 6px color-mix(in srgb, var(--icom) 45%, transparent); }
+/* Lignes de balayage et bande qui roule lentement, comme sur un vieux tube. */
+.icom-ecran::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 1px, transparent 1px 3px), linear-gradient(180deg, transparent 0%, rgba(255,255,255,.035) 48%, transparent 56%);
+  background-size: 100% 100%, 100% 260%; animation: icom-balayage 7s linear infinite; }
+@keyframes icom-balayage { from { background-position: 0 0, 0 120%; } to { background-position: 0 0, 0 -140%; } }
+.icom-haut, .icom-bas { display: flex; justify-content: space-between; align-items: center; gap: 16px; position: relative; z-index: 1; }
+.icom-haut { padding-bottom: 8px; border-bottom: 1px solid color-mix(in srgb, var(--icom) 18%, transparent); }
+.icom-duree { font-variant-numeric: tabular-nums; }
+.icom-source { position: relative; z-index: 1; display: grid; gap: 2px; }
+.icom-appel { font-size: .72rem; opacity: .7; }
+.icom-appel::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 8px; vertical-align: 0; background: var(--icom); box-shadow: 0 0 8px var(--icom); animation: icom-voyant 1.2s steps(2) infinite; }
+@keyframes icom-voyant { 50% { opacity: .25; } }
+.icom-nom { font: 300 clamp(1.7rem, 3.4vw, 2.6rem)/1.05 var(--f-titre); color: var(--icom); text-shadow: 0 0 14px color-mix(in srgb, var(--icom) 55%, transparent); }
+.icom-lieu { font-size: .8rem; }
+.icom-trace { position: relative; z-index: 1; width: 100%; height: 100%; min-height: 90px;
+  background: linear-gradient(color-mix(in srgb, var(--icom) 10%, transparent) 1px, transparent 1px) 0 50% / 100% 25%, linear-gradient(90deg, color-mix(in srgb, var(--icom) 8%, transparent) 1px, transparent 1px) 0 0 / 8.33% 100%; }
+.icom-niveau { display: flex; gap: 3px; }
+.icom-niveau i { width: 9px; height: 8px; background: color-mix(in srgb, var(--icom) 14%, #0a1114); }
+.icom-niveau i.on { background: var(--icom); box-shadow: 0 0 6px var(--icom); }
+.icom-niveau i.on:nth-child(n+13) { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+/* Bascule de ligne : l'écran saute, se rallume. */
+.icom.bascule .icom-ecran { animation: icom-bascule .5s steps(5); }
+@keyframes icom-bascule { 0% { filter: brightness(2.2) contrast(1.4); } 20% { filter: brightness(.3); transform: translateX(3px); } 40% { filter: brightness(1.6); transform: none; } 60% { filter: brightness(.6); } 100% { filter: none; } }
 
 /* ——— Table */
 /* L'image du lieu occupe tout l'écran ; les barres et le tiroir « Ramassé » se posent dessus. */
@@ -516,6 +545,7 @@ body.main-ouverte .det-ecran { right: 356px; }
   .s-fuite.strobo::after { display: none; }
   .titre-fond, .titre-gyro, .titre-nom, .media-img, .cine-media .media video, .pc-titre { animation: none !important; }
   .titre-gyro { display: none; } .pc-image { transition: none; }
+  .icom-ecran::after, .icom-appel::before, .icom.bascule .icom-ecran { animation: none !important; }
   body.pret #titre .titre-contenu, body.pret #titre .titre-menu, .brief-doc, .fin-boite, .panneau, .billet, .carte-grande, .modale-fond { animation: none !important; }
 }
 @media (max-width: 700px) {

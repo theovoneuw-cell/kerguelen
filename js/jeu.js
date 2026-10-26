@@ -740,6 +740,59 @@ function media(nom, { boucle = false, image = null } = {}) {
   }
   return box;
 }
+// ——— La console d'interphone (cinématiques à l'interphone) : l'écran mural de la coursive.
+// L'oscilloscope dessine la vraie voix quand elle passe par le haut-parleur, sinon une parole simulée (audiodescription, voix sans fichier).
+const SOURCES_INTER = { VAREK: ["Dr Ilan Varek", "Labo · poste 2", "#79b8ff"], BRANDT: ["Jo Brandt", "Machines · pont D", "#e3a33a"], VIGIE: ["VIGIE", "Réseau de bord", "#7cf29a"], LEMAIRE: ["Cdt Lemaire", "Enregistrement", "#c0c6ca"] };
+function consoleInterphone(zm, qui) {
+  let c = zm.querySelector(".icom");
+  if (!c) {
+    delete zm.dataset.qui;
+    zm.innerHTML = `<div class="icom-halo"></div><div class="icom"><div class="icom-ecran">
+      <div class="icom-haut"><span>Interphone — coursive C</span><span class="icom-duree">Liaison 00:00</span></div>
+      <div class="icom-source"><span class="icom-appel">Appel entrant</span><b class="icom-nom"></b><span class="icom-lieu"></span></div>
+      <canvas class="icom-trace"></canvas>
+      <div class="icom-bas"><span class="icom-niveau">${"<i></i>".repeat(16)}</span><span>Canal 07</span></div>
+    </div></div>`;
+    c = zm.querySelector(".icom"); animerInterphone(zm);
+  }
+  if (zm.dataset.qui === qui) return;
+  const [nom, lieu, couleur] = SOURCES_INTER[qui] || [qui, "", "#8ea6aa"];
+  zm.dataset.qui = qui; zm.style.setProperty("--icom", couleur); zm.bascule = performance.now();
+  c.querySelector(".icom-nom").textContent = nom; c.querySelector(".icom-lieu").textContent = lieu;
+  c.classList.remove("bascule"); void c.offsetWidth; c.classList.add("bascule");
+}
+function animerInterphone(zm) {
+  const cv = zm.querySelector(".icom-trace"), g = cv.getContext("2d"), barres = [...zm.querySelectorAll(".icom-niveau i")];
+  const duree = zm.querySelector(".icom-duree"), halo = zm.querySelector(".icom-halo"), cineEl = $("#cine");
+  const ana = Son.analyseurVoix && Son.analyseurVoix(), tab = ana ? new Float32Array(ana.fftSize) : null;
+  const debut = performance.now(), calme = matchMedia("(prefers-reduced-motion: reduce)").matches, N = 220;
+  let lisse = 0;
+  const pas = now => {
+    if (!zm.contains(cv)) return;   // une autre cinématique a pris l'écran
+    if (!cineEl.classList.contains("actif") || !cineEl.classList.contains("interphone")) { zm.querySelectorAll(".icom, .icom-halo").forEach(e => e.remove()); delete zm.dataset.qui; return; }
+    const r = devicePixelRatio || 1, W = Math.round(cv.clientWidth * r), H = Math.round(cv.clientHeight * r);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    const parle = cineEl.classList.contains("parle"), t = (now - debut) / 1000, couleur = (SOURCES_INTER[zm.dataset.qui] || [, , "#8ea6aa"])[2];
+    const ech = new Array(N).fill(0); let crete = 0;
+    if (tab) { ana.getFloatTimeDomainData(tab); for (let i = 0; i < N; i++) { ech[i] = tab[Math.floor(i * tab.length / N)] * 2.2; crete = Math.max(crete, Math.abs(ech[i])); } }
+    if (crete < .01) {
+      // Parole simulée : des syllabes (enveloppe irrégulière) sur un mélange de fréquences, ou un souffle de ligne ouverte.
+      const env = parle ? Math.pow(Math.max(0, Math.sin(t * 8.7) * .55 + Math.sin(t * 3.1 + 1.3) * .45), 1.4) : 0;
+      for (let i = 0; i < N; i++) ech[i] = env * (.55 * Math.sin(i * .21 + t * 37) + .3 * Math.sin(i * .57 - t * 21) + (Math.random() - .5) * .35) + (Math.random() - .5) * .04;
+    }
+    if (now - (zm.bascule || 0) < 380) for (let i = 0; i < N; i++) ech[i] = (Math.random() - .5) * 1.6;   // grésillement de bascule
+    const rms = Math.sqrt(ech.reduce((s, v) => s + v * v, 0) / N); lisse += (Math.min(1, rms * 3.2) - lisse) * .25;
+    // Phosphore : l'image précédente s'efface lentement au lieu de disparaître.
+    g.globalCompositeOperation = "source-over"; g.shadowBlur = 0; g.fillStyle = calme ? "#060b0d" : "rgba(6,11,13,.32)"; g.fillRect(0, 0, W, H);
+    g.beginPath(); for (let i = 0; i < N; i++) { const x = i / (N - 1) * W, y = H / 2 + Math.max(-1, Math.min(1, ech[i])) * H * .42; i ? g.lineTo(x, y) : g.moveTo(x, y); }
+    g.strokeStyle = couleur; g.lineWidth = 1.6 * r; g.shadowColor = couleur; g.shadowBlur = 10 * r; g.stroke();
+    const n = Math.round(lisse * barres.length); barres.forEach((b, i) => b.classList.toggle("on", i < n));
+    if (!calme) halo.style.opacity = (.18 + lisse * .82).toFixed(2);
+    const s = Math.floor(t); duree.textContent = `Liaison ${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+    requestAnimationFrame(pas);
+  };
+  requestAnimationFrame(pas);
+}
 function cine(plans, { court = false, musique = null, interphone: inter = false } = {}) {
   return new Promise(fin => {
     ecran("cine");
@@ -750,12 +803,12 @@ function cine(plans, { court = false, musique = null, interphone: inter = false 
     const montrer = async () => {
       const p = plans[i]; enCours = true; finVideo = false; suite.classList.remove("visible");
       // Jamais d'arrêt sur image : p.boucle fait tourner la vidéo sans fin, p.enchaine passe seul au plan suivant quand elle se termine.
-      zm.innerHTML = ""; if (p.video || p.image) {
+      if (inter) consoleInterphone(zm, p.voix && J.VOIX[p.voix] ? J.VOIX[p.voix][0] : "VIGIE");
+      else { zm.innerHTML = ""; if (p.video || p.image) {
         const m = media(p.video, { image: p.image, boucle: !!p.boucle }); zm.appendChild(m); requestAnimationFrame(() => m.classList.add("visible"));
         const v = m.querySelector("video"), k = i;
         if (v && p.enchaine) v.addEventListener("ended", () => { if (i !== k) return; if (enCours) finVideo = true; else avancer(); });
-      }
-      if (inter) zm.innerHTML = `<div class="interphone-onde"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>`;
+      } }
       txt.innerHTML = p.titre ? `<p class="cine-titre-chap">${p.titre}</p>${p.texte || ""}` : (p.texte ? `<p>${p.texte}</p>` : "");
       requestAnimationFrame(() => requestAnimationFrame(() => txt.classList.add("visible")));
       if (p.voix) { $("#cine").classList.add("parle"); journaliser(p.voix); await Son.voix(p.voix); $("#cine").classList.remove("parle"); }
@@ -972,4 +1025,4 @@ $("#b-reprendre").onclick = async () => {
 };
 
 // Pour les tests
-window.__jeu = { get S() { return S; }, set S(v) { S = v; }, J, effets, reveler, rendu, assembler, ouvrirCarte, prendre, aller, chapitre, fin, silence, rencontre, deplacerBete, distanceBete, tels, ouvrirDossier, api };
+window.__jeu = { get S() { return S; }, set S(v) { S = v; }, J, cine, effets, reveler, rendu, assembler, ouvrirCarte, prendre, aller, chapitre, fin, silence, rencontre, deplacerBete, distanceBete, tels, ouvrirDossier, api };
