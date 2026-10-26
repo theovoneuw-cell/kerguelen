@@ -380,6 +380,7 @@ function effets(liste) {
     if (e.grille) ouvrirGrille();
   });
   rendu(); sauver();
+  const ouvrir = (liste || []).find(e => e.ouvrir); if (ouvrir) setTimeout(() => ouvrirCarte(ouvrir.ouvrir), 350);
 }
 function reveler(n) { n = +n; if (enMain(n)) return; S.defausse = S.defausse.filter(x => x !== n); S.main.push(n); S.nouv.push(n); }
 function defausser(n) { n = +n; if (!enMain(n)) return; S.main = S.main.filter(x => x !== n); S.defausse.push(n); if (carteOuverte === n) fermerCarte(); }
@@ -431,6 +432,8 @@ function majHaut() {
 // Parties revenues au chapitre IV après la mort de Varek (la reptation rejouée relançait le chapitre) : on les remet au chapitre V.
 function reparerPartie() {
   if (S && S.etape === "jeu" && S.chap === 3 && S.flags.varekMort) { S.chap = 4; if (S.point && S.point.chap === 3) S.point.chap = 4; sauver(); }
+  // L'écran de quart (102, le code du jour) se défaussait une fois lu : il reste désormais dans le sac jusqu'à la porte de la Chambre.
+  if (S && S.chap === 4 && !S.flags.chambre && S.defausse.includes(102)) { reveler(102); sauver(); }
 }
 function rendu() {
   if (!S) return;

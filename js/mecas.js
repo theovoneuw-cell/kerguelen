@@ -140,16 +140,24 @@
       $$("button", el).forEach(b => b.onclick = () => A.interphone([b.dataset.c], { journal: false }));
     },
 
-    // ——— Le montage de la voix de Varek pour la porte de la Chambre
+    // ——— La porte de la Chambre : son écran dit où on en est (badge, voix) et ce qu'elle attend ; le montage de la voix de Varek
     montage(m, z, A) {
-      const S = A.S;
-      if (!A.enMain(90)) { z.appendChild(h(`<p class="m-aide">Il faut une voix d'officier. Le seul officier qui vous ait parlé, c'était Varek.</p>`)); return; }
+      const S = A.S, badge = !!S.flags.badgeCommandant, dicta = A.enMain(90);
+      const etat = (ok, oui, non) => `<span class="pt-etat ${ok ? "ok" : ""}">${ok ? oui : non}</span>`;
+      z.appendChild(h(`<div class="doc-ecran pt-ecran">CHAMBRE DE VIGIE — ACCÈS RESTREINT<br>DEUX AUTORISATIONS D'OFFICIER REQUISES<br><br>
+        1. BADGE D'OFFICIER ${etat(badge, "ACCEPTÉ — H. LEMAIRE, OFFICIER N° 1", "EN ATTENTE")}<br>
+        2. EMPREINTE VOCALE ${etat(false, "", "EN ATTENTE")}<br><br>
+        PHRASE D'AUTHENTIFICATION :<br>NOM · FONCTION · « J'AUTORISE L'ACCÈS » · CODE DU JOUR<br>
+        CODE DU JOUR : AFFICHÉ SUR L'ÉCRAN DE QUART (PASSERELLE)</div>`));
+      if (!badge) z.appendChild(h(`<p class="m-aide">Badge : glissez la carte d'un officier sur la porte.</p>`));
+      if (!dicta) { z.appendChild(h(`<p class="m-aide">Voix : il faut la voix enregistrée d'un officier. Le seul officier qui vous ait parlé, c'était Varek.</p>`)); return; }
       // Les mots se coupent aussi après une apostrophe : « qu'officier » donne « qu' » et « officier ».
-      const clips = [1, 2, 3, 4, 5, 6].map(i => ({ i, mots: A.J.VOIX["VAREK_D" + i][2].replace(/[.,:]/g, "").split(" ").flatMap(w => { const k = w.indexOf("'"); return k > 0 && k < w.length - 1 ? [w.slice(0, k + 1), w.slice(k + 1)] : [w]; }) }));
+      const clips = [1, 2, 3, 4, 5, 6].map(i => ({ i, mots: A.J.VOIX["VAREK_D" + i][2].replace(/[.,:]/g, "").split(/\s+/).filter(Boolean).flatMap(w => { const k = w.indexOf("'"); return k > 0 && k < w.length - 1 ? [w.slice(0, k + 1), w.slice(k + 1)] : [w]; }) }));
       let montage = [];
-      const el = h(`<div class="m-montage"><p class="m-aide">Touchez des mots pour les ajouter au montage, dans l'ordre. Badge : ${S.flags.badgeCommandant ? "accepté" : "glissez la carte d'un officier sur la porte"}.</p>
+      const el = h(`<div class="m-montage"><p class="m-aide">Voix : avec les six enregistrements du dictaphone de Varek, montez la phrase mot à mot. Touchez les mots dans l'ordre.</p>
         <div class="mt-clips">${clips.map(c => `<div class="mt-clip"><span class="c-num">${c.i}</span>${c.mots.map((w, k) => `<button class="mot" data-c="${c.i}" data-k="${k}">${w}</button>`).join("")}</div>`).join("")}</div>
         <div class="mt-piste"><span class="mt-label">Montage</span><div class="mt-mots"></div></div>
+        <p class="mt-guide"><span>nom</span><span>fonction</span><span>« j'autorise l'accès »</span><span>code du jour</span></p>
         <div class="mt-actions"><button class="btn btn-petit mt-annuler">Retirer le dernier</button><button class="btn btn-petit mt-vider">Tout effacer</button><button class="btn btn-principal mt-envoyer">Transmettre à la porte</button></div></div>`);
       z.appendChild(el);
       const maj = () => { $(".mt-mots", el).innerHTML = montage.map(x => `<span class="mot-pose"><i>${x.c}</i>${x.w}</span>`).join(""); };
