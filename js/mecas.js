@@ -239,13 +239,15 @@
       const S = A.S;
       if (!S.flags.cleInseree) { z.appendChild(h(`<p class="m-aide">Les caches sont verrouillés. Il faut d'abord la clé.</p>`)); return; }
       let seq = [];
-      const el = h(`<div class="m-lance"><div class="inters">${[0, 1, 2].map(i => `<button class="inter" data-i="${i}"><span class="cache"></span><span class="levier"></span></button>`).join("")}</div><p class="m-aide">Trois interrupteurs, de gauche à droite. Le manuel donne l'ordre.</p><div class="l-code" hidden></div></div>`);
+      // Les interrupteurs portent leur nom, gravé sous le cache ; l'ordre est au manuel (niveau 1, « Lancement de la chaloupe »).
+      const NOMS = ["Largage", "Alimentation", "Pressurisation"];
+      const el = h(`<div class="m-lance"><div class="inters">${[0, 1, 2].map(i => `<button class="inter" data-i="${i}" aria-label="${NOMS[i]}"><span class="cache"></span><span class="levier"></span><span class="inter-nom">${NOMS[i]}</span></button>`).join("")}</div><p class="m-aide">L'ordre de la procédure est au manuel de bord, niveau 1 : « Lancement de la chaloupe ».</p><p class="m-aide l-code-titre" hidden>Dernière étape : le matricule du pilote.</p><div class="l-code" hidden></div></div>`);
       z.appendChild(el);
       $$(".inter", el).forEach(b => b.onclick = () => {
         const i = +b.dataset.i; if (seq.includes(i)) return;
         if (m.ordre[seq.length] !== i) { A.echec("Alarme de séquence. Les interrupteurs retombent.", 8); seq = []; $$(".inter", el).forEach(x => x.classList.remove("on")); return; }
         seq.push(i); b.classList.add("on"); Son.bips([[600]], { duree: .1 });
-        if (seq.length === 3) { const c = $(".l-code", el); c.hidden = false; clavier(c, 4, v => { if (v === m.code) { A.fermerCarte(); M.lancer(A); return true; } A.echec("Matricule refusé.", 6); return false; }); }
+        if (seq.length === 3) { $(".l-code-titre", el).hidden = false; const c = $(".l-code", el); c.hidden = false; clavier(c, 4, v => { if (v === m.code) { A.fermerCarte(); M.lancer(A); return true; } A.echec("Matricule refusé.", 6); return false; }); }
       });
     },
     drone(m, z, A) {
@@ -508,6 +510,8 @@
       <div class="re-surcharge"><button class="btn btn-danger re-bouton">Surcharge (maintenir)</button></div></div>
       <div class="re-temps"><span>Jo</span><i></i></div>`);
     $(".re-img", sc).style.backgroundImage = `url('${A.RACINE}img/l-reacteur.jpg')`;
+    // Le mot du niveau 5 n'est dit qu'une fois, par Jo : il reste affiché pendant toute la scène.
+    sc.insertBefore(h(`<p class="re-mot"><span>Jo, à l'interphone</span> « Le manuel, dernier niveau. Le mot, c'est <b>DÉSOLATION</b>. »</p>`), $(".re-commandes", sc));
     let etape = 1, leviers = [], fini = false, debut = performance.now(), DUREE = 150000;
     const aig = { 1: "rouge", 2: "vert", 3: "vert" }, voy = "orange clignotant";
     const maj = () => { $$(".re-aig", sc).forEach(a => { const k = a.dataset.a; $("span", a).textContent = aig[k]; a.classList.toggle("rouge", aig[k] === "rouge"); }); $(".re-voyant span", sc).textContent = etape >= 2 ? voy : "—"; $(".re-voyant", sc).classList.toggle("clignote", etape >= 2); sc.dataset.etape = etape; };
