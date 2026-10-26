@@ -719,6 +719,12 @@ async function finChapitre1() {
   billet(`<p>Le <b>Dossier</b> d'enquête est ouvert (en bas de l'écran) : les quatre membres d'équipage qui pourraient porter la larve.</p><p>Chaque preuve que vous trouverez s'y inscrira, sur la fiche de la personne qu'elle concerne et sur la frise de la nuit du 16 novembre.</p>`);
 }
 function ouvrirGrille() {
+  // Sans le schéma du manuel (niveau 2, FULMAR), le drone et la reptation ne sont pas jouables : on n'entre pas.
+  if (!S.flags.fulmar) {
+    Son.jouer("SFX_BIP_NON");
+    billet(`<p><b>Vous n'avez pas le plan des conduits de ventilation.</b></p><p>La clé tourne dans le premier écrou, puis vous vous arrêtez. Derrière la grille, le réseau part dans tous les sens, sans un panneau. Sans plan, vous vous y perdriez, et elle y est peut-être.</p><p>Le schéma de ventilation est au manuel de bord, niveau 2. Il faut d'abord trouver son mot de passe.</p>`);
+    return;
+  }
   Son.jouer("SFX_GRILLE"); defausser(36); S.flags.grille = true; rendu(); sauver();
   setTimeout(() => chapitre(2), 1600);
 }
