@@ -243,6 +243,8 @@
     drone(m, z, A) {
       const b = h(`<button class="btn btn-principal">Lancer le drone dans la ventilation</button>`); z.appendChild(b);
       if (!A.S.flags.grille) { b.disabled = true; z.appendChild(h(`<p class="m-aide">La grille de ventilation est encore fermée.</p>`)); return; }
+      // Une fois au labo (chapitre IV et après), la reptation est faite : on ne la rejoue pas, elle relancerait le chapitre IV et ferait reparler Varek.
+      if (A.S.chap >= 3) { b.remove(); z.appendChild(h(`<p class="m-aide">Le drone a fait son travail : le chemin des conduits jusqu'au labo est connu.</p>`)); return; }
       if (A.S.flags.route) { b.textContent = "Ramper jusqu'au labo"; b.onclick = () => { A.fermerCarte(); M.ramper(A); }; return; }
       b.onclick = () => { A.fermerCarte(); M.drone(A); };
     }
@@ -408,7 +410,8 @@
     else { tete.style.backgroundImage = `url('${A.RACINE}img/b-tete.jpg')`; tete.classList.add("passe"); Son.jouer("BETE_CLICS"); await A.attendre(1400); }
     txt.textContent = "Au bout du conduit, une tête sans yeux a traversé votre lumière. Elle ne s'est pas arrêtée. Vous ne bougez plus pendant une éternité.";
     await A.attendre(5200); txt.classList.remove("visible");
-    finScene(); A.chapitre(3);
+    finScene();
+    if (A.S.chap < 3) A.chapitre(3); else A.rendreLieu("labo");   // jamais de retour en arrière d'un chapitre
   };
 
   // ——— La grappe, puis la mort de Varek et la fuite

@@ -396,7 +396,10 @@ async function voixHorsSilence(c) {
 }
 function dire(c) { journaliser(c); return voixHorsSilence(c); }
 let fileInterphone = Promise.resolve();
+// Un mort ne parle plus : après la mort de Varek, ses répliques en direct sont écartées (ses enregistrements du dictaphone, VAREK_D* et VAREK_MONTAGE, restent).
+const muet = c => S && S.flags.varekMort && /^VAREK_\d/.test(c);
 function interphone(codes, { journal = true } = {}) {
+  codes = codes.filter(c => !muet(c)); if (!codes.length) return fileInterphone;
   fileInterphone = fileInterphone.then(async () => {
     await finSilence();
     Son.jouer("SFX_INTERPHONE"); await attendre(AD ? 300 : 500);
@@ -536,7 +539,7 @@ function entree(v) {
   const premiere = !S.vus["lieu-" + v]; S.vus["lieu-" + v] = true;
   ambianceLieu();
   if (v === "cabBrandt" && premiere) { interphone(["BRANDT_03", "BRANDT_FREDONNE"]).then(() => { reveler(66); rendu(); sauver(); }); }
-  if (v === "labo" && S.chap === 3 && premiere) setTimeout(() => interphone(["VAREK_07"]), 1200);
+  if (v === "labo" && S.chap === 3 && premiere && !S.flags.varekMort) setTimeout(() => interphone(["VAREK_07"]), 1200);
 }
 function ambianceLieu() {
   const a = { sas: "AMB_SAS", vestiaire: "AMB_SAS", labo: "AMB_LABO", passerelle: "AMB_PASSERELLE", vigie: "AMB_VIGIE", chaloupe: "AMB_CHALOUPE" }[S.lieu] || "AMB_COURSIVE";
@@ -1034,6 +1037,8 @@ $("#b-reprendre").onclick = async () => {
   toast("Reliez les téléphones, puis reprenez.");
   const b = document.createElement("button"); b.className = "btn btn-principal"; b.textContent = "Reprendre la partie";
   b.onclick = () => {
+    // Parties revenues au chapitre IV après la mort de Varek (la reptation rejouée relançait le chapitre) : on les remet au chapitre V.
+    if (S.chap === 3 && S.flags.varekMort) { S.chap = 4; if (S.point && S.point.chap === 3) S.point.chap = 4; sauver(); }
     chapitre(S.chap, { reprise: true }); if (S.autod) Mecas.reprendreChaloupe(api());
     // Parties commencées avant que la porte du sas exige le détecteur : on le rallume pour qu'elles restent jouables.
     if (S.chap >= 1 && !S.flags.detecteur) {
