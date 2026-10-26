@@ -357,9 +357,18 @@ body.plein .plein-global { display: none !important; }
 .bip.vu { border-color: var(--froid); }
 .lampe-morse { width: 70px; height: 70px; border-radius: 50%; background: #2a0a0a; border: 2px solid #3d1414; margin: 10px 0; transition: background .04s; }
 .lampe-morse.on { background: #ff3b3b; box-shadow: 0 0 40px #ff3b3b; }
-.m-vitre .vitre { position: relative; height: 170px; background: linear-gradient(135deg, #1b2a33, #0d151a); border: 1px solid var(--ligne-2); display: grid; place-items: center; overflow: hidden; }
-.vitre .ecrit { font-family: "Barlow", sans-serif; font-weight: 300; font-size: 5.4rem; color: rgba(220,235,245,.85); transform: scaleX(-1) rotate(-3deg); letter-spacing: .08em; }
-.vitre .buee { position: absolute; inset: -10px; background: rgba(200,212,220,.86); filter: blur(6px); transition: opacity .25s; }
+/* La vitre embuée : une buée opaque (aucun chiffre ne transparaît), qui se dégage depuis le centre quand on souffle,
+   comme une haleine sur un carreau ; l'écriture de Varek n'apparaît que dans la partie dégagée. --net va de 0 (embuée) à 1. */
+@property --net { syntax: "<number>"; inherits: true; initial-value: 0; }
+.m-vitre .vitre { --net: 0; position: relative; height: 230px; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--ligne-2); transition: --net .35s ease-out;
+  background: linear-gradient(rgba(5,10,13,.55), rgba(5,10,13,.55)), url("../img/k-82.jpg") center 40% / cover; }
+.vitre .ecrit { position: relative; font-family: "Barlow", sans-serif; font-weight: 300; font-size: 5.8rem; color: rgba(226,238,244,.9); transform: scaleX(-1) rotate(-3deg); letter-spacing: .08em;
+  text-shadow: 0 0 1px rgba(255,255,255,.5), 0 6px 4px rgba(200,220,230,.18); filter: blur(.4px); opacity: clamp(0, calc((var(--net) - .45) * 2.2), 1); }
+.vitre .buee { position: absolute; inset: -12px; filter: blur(1.5px);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 .88 0 0 0 0 .92 0 0 0 0 .95 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    linear-gradient(180deg, rgb(186,201,210), rgb(158,176,186));
+  -webkit-mask-image: radial-gradient(ellipse calc(var(--net) * 78%) calc(var(--net) * 96%) at 50% 52%, transparent 62%, #000 100%);
+  mask-image: radial-gradient(ellipse calc(var(--net) * 78%) calc(var(--net) * 96%) at 50% 52%, transparent 62%, #000 100%); }
 .m-spectre canvas { width: 100%; height: auto; border: 1px solid var(--ligne-2); }
 .m-notes .touches { display: flex; gap: 6px; align-items: flex-end; }
 .touche { width: 46px; height: calc(80px + var(--h)); background: linear-gradient(#20282e, #12171b); border: 1px solid var(--ligne-2); cursor: pointer; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; font-family: var(--f-ecran); }

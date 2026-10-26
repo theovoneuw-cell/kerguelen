@@ -99,8 +99,8 @@
       const S = A.S;
       const el = h(`<div class="m-vitre"><div class="vitre"><span class="ecrit">5812</span><div class="buee"></div></div><p class="m-aide">${A.telAvecMicro() ? "Soufflez fort et longtemps sur le micro d'un téléphone." : "Maintenez le bouton pour souffler sur la vitre."}</p><button class="btn m-tenir">Souffler</button></div>`);
       z.appendChild(el);
-      const buee = $(".buee", el); let net = S.flags.vitre ? 1 : 0;
-      const maj = () => { buee.style.opacity = 1 - net; if (net >= 1 && !S.flags.vitre) { S.flags.vitre = true; A.sauver(); } };
+      const vitre = $(".vitre", el); let net = S.flags.vitre ? 1 : 0;
+      const maj = () => { vitre.style.setProperty("--net", net.toFixed(3)); if (net >= 1 && !S.flags.vitre) { S.flags.vitre = true; A.sauver(); } };
       maj();
       ecouteurs.souffle = d => { net = Math.min(1, net + (d.force || .35)); maj(); };
       A.instrument("souffle", { on: true });
