@@ -434,6 +434,8 @@ function reparerPartie() {
   if (S && S.etape === "jeu" && S.chap === 3 && S.flags.varekMort) { S.chap = 4; if (S.point && S.point.chap === 3) S.point.chap = 4; sauver(); }
   // L'écran de quart (102, le code du jour) se défaussait une fois lu : il reste désormais dans le sac jusqu'à la porte de la Chambre.
   if (S && S.chap === 4 && !S.flags.chambre && S.defausse.includes(102)) { reveler(102); sauver(); }
+  // Le pupitre d'annonces (103) partait à la défausse au changement de chapitre : il sert au leurre du chapitre VI, on le rend.
+  if (S && S.chap === 5 && !S.flags.leurre && S.defausse.includes(103)) { reveler(103); sauver(); }
 }
 function rendu() {
   if (!S) return;
@@ -536,6 +538,12 @@ function aller(v) {
     const raisons = { porteB: "La porte coupe-feu du pont B est baissée. Verrouillée depuis le labo.", porteA: "L'escalier du pont A est fermé. VIGIE garde la passerelle.", porteD: "La porte du pont D ne s'ouvre pas.", porteSas: "La porte du sas est fermée." };
     const p = lieu(S.lieu).portes && lieu(S.lieu).portes[v];
     toast(p && raisons[p] ? raisons[p] : `${lieu(v).nom} : ${o}.`); Son.jouer("SFX_BIP_NON"); return;
+  }
+  // Chapitre VI : elle garde la coursive D, entre vous et la chaloupe. Pas un silence à chaque clic : on dit ce qui se passe et quoi faire.
+  if (v === "coursiveD" && S.bete.active && S.bete.fixe === v && S.bete.pos === v && !S.flags.leurre) {
+    Son.jouer("BETE_CLICS");
+    billet(`<p><b>Elle est là.</b> Le détecteur s'affole dès que vous approchez : la bête s'est postée dans la coursive D, juste derrière la porte, entre vous et la chaloupe. Y entrer maintenant, c'est mourir.</p><p>Elle chasse au son. Il faut l'attirer ailleurs, loin de votre chemin : sur la passerelle, le <b>pupitre d'annonces</b> (103) diffuse une alarme dans la section de votre choix.</p>`);
+    return;
   }
   if (S.bete.active && S.bete.pos === v) { surprise(v); return; }
   S.precedent = S.lieu; S.lieu = v; ajouterBruit(2, true);
