@@ -100,7 +100,7 @@ function orientation(e) {
   const b = e.beta || 0, g = e.gamma || 0;
   incl = { g, b };
   posFace = Math.abs(b) > 150; majFace();
-  if (droneOn) {
+  if (droneOn && !planVentOn) {
     const t = performance.now(); if (t - dernierIncl > 100) { dernierIncl = t; envoyer({ t: "incl", g, b }); }
     const bulle = $("#bulle"); bulle.style.transform = `translate(${Math.max(-1, Math.min(1, g / 35)) * 70}px, ${Math.max(-1, Math.min(1, b / 35)) * 70}px)`;
     $("#drone-ordre").textContent = g < -18 ? "← gauche" : g > 18 ? "droite →" : b < -18 ? "↑ avancer" : b > 26 ? "↓ reculer" : "";
@@ -131,13 +131,29 @@ setInterval(() => {
   envoyer({ t: "niveau", db: Math.round(db), depasse });
 }, 100);
 
+// Le plan de ventilation du manuel reste consultable pendant le pilotage : le téléphone qui pilote est souvent le seul.
+// Le temps de lire, l'inclinaison n'envoie plus d'ordre au drone.
+let planVentOn = false;
+function majPlanVent() {
+  const z = $("#plan-vent"); z.hidden = !planVentOn;
+  $("#b-plan-vent").textContent = planVentOn ? "Reprendre le pilotage" : "Plan de la ventilation";
+  $(".ins-drone").classList.toggle("avec-plan", planVentOn);
+  if (!planVentOn) { z.innerHTML = ""; return; }
+  const i = MANUEL.niveaux.findIndex(n => n.pages.some(p => p.html.includes('class="schema"'))), n = MANUEL.niveaux[i];
+  if (!n) { z.innerHTML = ""; return; }
+  z.innerHTML = !n.mot || ouverts.includes(i)
+    ? n.pages.find(p => p.html.includes('class="schema"')).html + `<p class="plan-pause">Pilotage en pause pendant la lecture.</p>`
+    : `<p>Le schéma de ventilation est au manuel, ${n.titre}. Ce niveau est encore verrouillé : son mot de passe est quelque part à bord.</p>`;
+}
+$("#b-plan-vent").onclick = () => { planVentOn = !planVentOn; majPlanVent(); if (planVentOn) $("#drone-ordre").textContent = ""; };
+
 // ——————————————————————————————————————————————— Instruments demandés par l'écran
 function instrument(d) {
   const ins = $("#instrument");
   const montrer = (cls, on) => { $$(".instrument > div").forEach(x => x.hidden = !x.classList.contains(cls) || !on); ins.hidden = !$$(".instrument > div").some(x => !x.hidden); };
   if (d.nom === "pouce") { montrer("ins-pouce", d.on); pouceCompte = 0; $("#pouce-compte").textContent = ""; }
   if (d.nom === "souffle") { souffleOn = !!d.on; souffleFrames = 0; montrer("ins-souffle", d.on); }
-  if (d.nom === "drone") { droneOn = !!d.on; montrer("ins-drone", d.on); if (!mouvementOk) $("#drone-ordre").textContent = "Mouvements non autorisés : utilisez les boutons de l'écran."; }
+  if (d.nom === "drone") { droneOn = !!d.on; planVentOn = false; majPlanVent(); montrer("ins-drone", d.on); if (!mouvementOk) $("#drone-ordre").textContent = "Mouvements non autorisés : utilisez les boutons de l'écran."; }
   if (d.nom === "uv" && !d.on) fermerCamera();
   if (d.nom === "silence") {
     silenceOn = !!d.on; depasses = 0;

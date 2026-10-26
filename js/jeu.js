@@ -97,7 +97,8 @@ function instrument(nom, params = {}, cible = null) {
 }
 const aDesTels = () => tels.size > 0;
 const telAvecMicro = () => [...tels.values()].some(t => t.micro);
-const telAvecMouvement = () => [...tels.entries()].find(([, t]) => t.mouvement);
+// Le drone se pilote de préférence au téléphone Détecteur : celui du manuel garde le schéma de ventilation sous les yeux.
+const telAvecMouvement = () => { const l = [...tels.entries()].filter(([, t]) => t.mouvement); return l.find(([, t]) => t.role === "detecteur") || l.find(([, t]) => t.role !== "manuel") || l[0]; };
 
 // ——————————————————————————————————————————————— Temps
 let dernier = performance.now(), enPause = false, dernierAvisDet = 0;

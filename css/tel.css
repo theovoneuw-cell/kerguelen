@@ -85,3 +85,11 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 .camera canvas { width: 100%; height: 100%; object-fit: contain; }
 .cam-note { position: absolute; top: calc(env(safe-area-inset-top) + 10px); left: 0; right: 0; text-align: center; color: #d7c8ff; font-size: .9rem; }
 .cam-fermer { position: absolute; bottom: calc(env(safe-area-inset-bottom) + 16px); left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.6); border: 1px solid #6b55c8; color: #d7c8ff; padding: 10px 22px; border-radius: 0; }
+
+/* Plan de ventilation pendant le pilotage du drone */
+.instrument:has(.avec-plan) { place-content: start center; overflow-y: auto; }
+.ins-drone.avec-plan .ins-consigne, .ins-drone.avec-plan .niveau-bulle, .ins-drone.avec-plan #drone-ordre { display: none; }
+.plan-vent { width: min(92vw, 520px); margin: 6px auto 14px; text-align: left; color: var(--doux); font-size: .92rem; }
+.plan-vent .schema { width: 100%; height: auto; max-height: 62vh; display: block; }
+.plan-pause { font-family: "IBM Plex Mono", monospace; font-size: .8rem; color: var(--accent, #e3a33a); text-align: center; margin-top: 8px; }
+#b-plan-vent { background: var(--panneau); border-color: var(--ligne-2); color: var(--texte); }
