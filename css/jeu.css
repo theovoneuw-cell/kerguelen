@@ -6,7 +6,7 @@
   --accent: #e3a33a; --accent-sombre: #6b4b18; --danger: #d4372c; --vigie: #7cf29a; --froid: #79b8ff;
   --f-texte: "Barlow", system-ui, sans-serif; --f-titre: "Oxanium", "Barlow", sans-serif; --f-ecran: "IBM Plex Mono", ui-monospace, monospace;
   /* Étalonnage commun de toutes les images du jeu (choix « moyen ») : un filtre, puis une teinte acier en mode couleur. */
-  --etalon-filtre: saturate(.7) contrast(1.07) brightness(.88); --etalon-teinte: rgba(30,90,105,.28);
+  --etalon-filtre: saturate(.7) contrast(1.07) brightness(1); --etalon-teinte: rgba(30,90,105,.28);
   --sortie: cubic-bezier(.16,1,.3,1);
   color-scheme: dark;
 }
@@ -194,9 +194,10 @@ body.pret #titre .titre-contenu { --ty: -50%; }
 .scene-fond { position: absolute; inset: -60px; background: center/cover no-repeat; filter: blur(30px) brightness(.32) saturate(.8); transition: background-image .4s; }
 .scene-boite { position: absolute; overflow: hidden; background: #000; cursor: none; --lx: 50%; --ly: 50%; --rayon: 140px; box-shadow: 0 0 80px 30px rgba(0,0,0,.55); }
 .scene-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.scene-calques { position: absolute; inset: 0; }
-.scene-noir { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle var(--rayon) at var(--lx) var(--ly), rgba(0,0,0,0) 0, rgba(0,0,0,.12) 45%, rgba(0,0,0,.86) 100%); transition: background .1s; }
-.scene-noir::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle calc(var(--rayon) * 2.6) at var(--lx) var(--ly), transparent 30%, rgba(0,0,0,.6) 100%); }
+.scene-calques { position: absolute; inset: 0; -webkit-mask-image: radial-gradient(circle calc(var(--rayon) * 1.1) at var(--lx) var(--ly), #000 45%, rgba(0,0,0,.22) 100%); mask-image: radial-gradient(circle calc(var(--rayon) * 1.1) at var(--lx) var(--ly), #000 45%, rgba(0,0,0,.22) 100%); }
+/* Sans la lampe on devine la pièce (voile ~65 %) ; les numéros, eux, ne ressortent que dans le faisceau (masque de .scene-calques). */
+.scene-noir { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle var(--rayon) at var(--lx) var(--ly), rgba(0,0,0,0) 0, rgba(0,0,0,.1) 45%, rgba(0,0,0,.5) 100%); transition: background .1s; }
+.scene-noir::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle calc(var(--rayon) * 2.6) at var(--lx) var(--ly), transparent 30%, rgba(0,0,0,.3) 100%); }
 body.panne .scene-noir { background: radial-gradient(circle calc(var(--rayon) * .7) at var(--lx) var(--ly), rgba(40,0,0,0) 0, rgba(20,0,0,.97) 100%); }
 .nombre-cache { position: absolute; transform: translate(-50%, -50%) rotate(var(--r)); font-family: var(--f-titre); font-weight: 700; font-size: clamp(14px, 1.7vw, 24px); color: rgba(236, 228, 208, .72); letter-spacing: .02em; text-shadow: 0 0 2px rgba(0,0,0,.6); pointer-events: none; mix-blend-mode: screen; }
 .nombre-cache.pris { opacity: .28; }
@@ -528,4 +529,4 @@ body.main-ouverte .det-ecran { right: 356px; }
   #table.actif::after { content: "Kerguelen se joue sur un grand écran, vu par tous. Ouvrez ce lien sur un ordinateur ; les téléphones servent d'instruments."; position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 32px; text-align: center; background: var(--fond); color: var(--texte); font: 300 1.3rem/1.5 var(--f-titre); }
 }
 /* Vue de contrôle des numéros (tests) */
-body.controle .scene-noir { display: none; } body.controle .nombre-cache { color: #ff2d55; opacity: 1; mix-blend-mode: normal; font-size: 28px; text-shadow: 0 0 3px #000, 0 0 6px #000; }
+body.controle .scene-noir { display: none; } body.controle .scene-calques { -webkit-mask-image: none; mask-image: none; } body.controle .nombre-cache { color: #ff2d55; opacity: 1; mix-blend-mode: normal; font-size: 28px; text-shadow: 0 0 3px #000, 0 0 6px #000; }
