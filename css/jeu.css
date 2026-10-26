@@ -474,6 +474,15 @@ body.secousse .ecran.actif, body.secousse .speciale { animation: secousse .45s; 
 .dr-consigne { margin: 0; color: var(--doux); font-size: .9rem; }
 .dr-boutons, .dr-outils { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .dr-outils { justify-content: space-between; }
+/* Schéma de ventilation sur l'écran du drone (mêmes couleurs que dans le manuel du téléphone) */
+.dr-plan { position: absolute; z-index: 3; right: 18px; top: 44px; width: min(420px, 40%); padding: 10px 12px 12px; background: rgba(5,8,11,.92); border: 1px solid var(--ligne-2); }
+.dr-plan-titre { margin: 0 0 6px; font: .78rem var(--f-ecran); color: var(--doux); }
+.dr-plan .schema { width: 100%; height: auto; display: block; background: #05070a; border: 1px solid var(--ligne-2); }
+.dr-plan .schema .traits line { stroke: #4d5a63; stroke-width: 1.6; }
+.dr-plan .schema .jonction { fill: #8d979e; } .dr-plan .schema .bout { fill: #4d5a63; } .dr-plan .schema .bout.labo { fill: var(--accent); }
+.dr-plan .schema .nom { fill: var(--doux); font: 3px var(--f-texte); }
+.dr-plan .schema .num rect { fill: #1b2328; stroke: #6e7a83; stroke-width: .3; } .dr-plan .schema .num text { fill: #f0f3f4; font: 600 4.2px var(--f-titre); text-anchor: middle; }
+#dr-plan.actif { border-color: var(--accent); color: var(--accent); }
 .dr-uv { position: absolute; inset: 0; pointer-events: none; }
 .dr-uv svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .uv-on .dr-img { filter: brightness(.55) hue-rotate(200deg) saturate(1.6); }

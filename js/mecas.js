@@ -309,7 +309,7 @@
     const sc = scene("s-drone", `<div class="dr-vue"><div class="dr-img"></div><div class="dr-plaques"></div><div class="dr-uv"></div><div class="dr-osd"><span>DRONE D'INSPECTION · CAM 1</span><span class="dr-pos"></span><span class="dr-rec">● REC</span></div><p class="dr-impasse" hidden></p></div>
       <div class="dr-commandes"><p class="dr-consigne">${telMvt ? "Celui qui tient le téléphone le pose à plat dans la main : penchez à gauche ou à droite pour choisir une branche, vers l'avant pour avancer (sans branche choisie : tout droit), vers vous pour reculer." : "Flèches du clavier ou boutons : gauche / droite pour choisir, haut pour avancer (sans branche choisie : tout droit), bas pour reculer."}</p>
       <div class="dr-boutons"><button class="btn" data-d="gauche">←</button><button class="btn" data-d="toutdroit">↑ tout droit</button><button class="btn" data-d="droite">→</button><button class="btn btn-principal" data-d="avancer">Avancer</button><button class="btn" data-d="reculer">Reculer</button></div>
-      <div class="dr-outils"><button class="btn" id="dr-uv">Lampe UV</button><form class="pioche dr-pioche"><label>Prendre</label><input inputmode="numeric" maxlength="3" placeholder="n°"><button class="btn btn-petit">OK</button></form><button class="btn" id="dr-quitter">Rappeler le drone</button></div></div>`);
+      <div class="dr-outils"><span><button class="btn" id="dr-plan">Plan de ventilation</button> <button class="btn" id="dr-uv">Lampe UV</button></span><form class="pioche dr-pioche"><label>Prendre</label><input inputmode="numeric" maxlength="3" placeholder="n°"><button class="btn btn-petit">OK</button></form><button class="btn" id="dr-quitter">Rappeler le drone</button></div></div>`);
     const vue = $(".dr-vue", sc), img = $(".dr-img", sc), plaques = $(".dr-plaques", sc), uvL = $(".dr-uv", sc), imp = $(".dr-impasse", sc);
     const POS = { gauche: [23, 38], droite: [75, 38], toutdroit: [50, 47] };
     const afficher = () => {
@@ -372,6 +372,15 @@
     $(".dr-pioche", sc).onsubmit = e => { e.preventDefault(); const champ = $("input", e.target), n = parseInt(champ.value, 10); champ.value = ""; if (n === C.trace.nombre && S.flags.uvVu) { A.reveler(n); S.flags.trace = true; A.sauver(); A.rendu(); Son.jouer("SFX_BIP_OK"); A.toast("Carte 73 ramassée : le trajet de la larve."); } else { Son.jouer("SFX_BIP_NON"); A.ajouterBruit(3); } };
     const stop = () => { document.removeEventListener("keydown", clavierDr); clearInterval(vu); A.instrument("drone", { on: false }); A.instrument("uv", { on: false }); finScene(); };
     $("#dr-quitter").onclick = () => { stop(); A.rendu(); };
+    // Le schéma de ventilation du manuel (niveau 2), aussi sur le grand écran dès que FULMAR a été tapé dans le manuel.
+    $("#dr-plan").onclick = () => {
+      const ouvert = $(".dr-plan", sc);
+      if (ouvert) { ouvert.remove(); $("#dr-plan").classList.remove("actif"); return; }
+      if (!S.flags.fulmar) { A.toast("Le schéma de ventilation est au manuel, niveau 2. Il faut d'abord trouver son mot de passe."); return; }
+      const p = document.createElement("div"); p.className = "dr-plan";
+      p.innerHTML = `<p class="dr-plan-titre">Manuel, niveau 2 — schéma de ventilation</p>${A.J.SCHEMA_CONDUITS}`;
+      vue.appendChild(p); $("#dr-plan").classList.add("actif");
+    };
     afficher();
   };
 
