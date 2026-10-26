@@ -427,8 +427,14 @@ function majHaut() {
   $(".bruit").classList.toggle("haut", S.bruit > 60);
   $$("#rencontres i").forEach((i, k) => i.classList.toggle("plein", k < S.rencontres));
 }
+// Remet d'aplomb une partie abîmée par un ancien bug, à la reprise comme en cours de jeu.
+// Parties revenues au chapitre IV après la mort de Varek (la reptation rejouée relançait le chapitre) : on les remet au chapitre V.
+function reparerPartie() {
+  if (S && S.etape === "jeu" && S.chap === 3 && S.flags.varekMort) { S.chap = 4; if (S.point && S.point.chap === 3) S.point.chap = 4; sauver(); }
+}
 function rendu() {
   if (!S) return;
+  reparerPartie();
   majHaut(); renduScene(); renduMain(); majDetecteurEcran();
   $("#b-dossier").hidden = !S.flags.dossier;
 }
@@ -1037,8 +1043,7 @@ $("#b-reprendre").onclick = async () => {
   toast("Reliez les téléphones, puis reprenez.");
   const b = document.createElement("button"); b.className = "btn btn-principal"; b.textContent = "Reprendre la partie";
   b.onclick = () => {
-    // Parties revenues au chapitre IV après la mort de Varek (la reptation rejouée relançait le chapitre) : on les remet au chapitre V.
-    if (S.chap === 3 && S.flags.varekMort) { S.chap = 4; if (S.point && S.point.chap === 3) S.point.chap = 4; sauver(); }
+    reparerPartie();
     chapitre(S.chap, { reprise: true }); if (S.autod) Mecas.reprendreChaloupe(api());
     // Parties commencées avant que la porte du sas exige le détecteur : on le rallume pour qu'elles restent jouables.
     if (S.chap >= 1 && !S.flags.detecteur) {

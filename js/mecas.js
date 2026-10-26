@@ -436,7 +436,7 @@
     S.lieu = "coursiveC";
     if (choix !== "porte") await A.rencontre({ fuir: false });
     if (A.S.etape !== "jeu") return;
-    A.billet(choix === "porte" ? "La porte du labo s'ouvre de l'intérieur. Vous déboulez dans la coursive C et vous courez jusqu'à ne plus pouvoir. Derrière vous, plus aucun bruit. C'est ça, le pire." : "Vous avez fini par sortir, sans savoir comment. Varek n'a plus jamais rien dit.");
+    A.billet(choix === "porte" ? "La porte du labo s'ouvre de l'intérieur. Vous déboulez dans la coursive C et vous courez jusqu'à ne plus pouvoir. Derrière vous, plus aucun bruit. C'est ça, le pire.<br><br>Dans la fuite, vous l'avez vu tomber : le <b>dictaphone de Varek</b> est resté par terre, au labo." : "Vous avez fini par sortir, sans savoir comment. Varek n'a plus jamais rien dit.<br><br>Dans la fuite, vous l'avez vu tomber : le <b>dictaphone de Varek</b> est resté par terre, au labo.");
     A.quandBilletsFinis(() => A.chapitre(4));
   };
 
