@@ -518,9 +518,9 @@ body.secousse .ecran.actif, body.secousse .speciale { animation: secousse .45s; 
 /* Mode caméra : la trace a la luminosité moyenne du fond, seule sa teinte (un peu de bleu, moins de rouge) diffère.
    L'œil ne la distingue presque pas dans le noir ; le téléphone amplifie l'écart bleu − rouge et la fait apparaître.
    Tout le reste passe en gris neutre (écart nul), pour que seule la trace s'allume. */
-.uv-camera .dr-img { filter: brightness(.13) grayscale(1); }
-.uv-camera .dr-uv .trace { stroke: rgb(5,7,15); filter: none; }
-.uv-camera .uv-num { color: rgb(5,7,15); text-shadow: none; }
+.uv-camera .dr-img { filter: grayscale(1) contrast(.35) brightness(.2); }
+.uv-camera .dr-uv .trace { stroke: rgb(19,25,33); filter: none; }
+.uv-camera .uv-num { color: rgb(19,25,33); text-shadow: none; }
 .uv-camera .plaque { background: #2e2e2e; border-color: #444; color: rgba(228,228,228,.82); }
 .uv-camera .plaque i { color: rgba(228,228,228,.6); }
 .s-ramper { grid-template-rows: 1fr; }
