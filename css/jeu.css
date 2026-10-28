@@ -291,10 +291,12 @@ body.plein .plein-global { display: none !important; }
 }
 
 /* ——— Fenêtres */
-.modale { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; }
+.modale { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 14px 14px 92px; }
+/* Fenêtre ouverte : le sous-titre descend tout en bas, dans la marge que la fenêtre lui laisse (il ne cache plus ses boutons) */
+body:has(.modale:not([hidden])) .sous-titre { bottom: 10px; }
 .modale-fond { position: absolute; inset: 0; background: rgba(2,4,6,.8); animation: fond-entre .25s ease both; }
 @keyframes fond-entre { from { opacity: 0; } }
-.panneau, .billet, .carte-grande { position: relative; background: var(--panneau); border: 1px solid var(--ligne-2); max-height: 90vh; overflow: auto; box-shadow: 0 30px 70px rgba(0,0,0,.55); animation: fenetre-entre .25s var(--sortie) both; }
+.panneau, .billet, .carte-grande { position: relative; background: var(--panneau); border: 1px solid var(--ligne-2); max-height: calc(100vh - 106px); overflow: auto; box-shadow: 0 30px 70px rgba(0,0,0,.55); animation: fenetre-entre .25s var(--sortie) both; }
 @keyframes fenetre-entre { from { opacity: 0; transform: translateY(8px) scale(.985); } }
 .panneau > h2, .billet h2 { font-weight: 300; font-size: 1.8rem; text-transform: uppercase; letter-spacing: .02em; padding-bottom: .45em; border-bottom: 1px solid var(--ligne); }
 .panneau { width: min(620px, 92vw); padding: 24px 26px; }
