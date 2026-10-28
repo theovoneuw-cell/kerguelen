@@ -518,9 +518,10 @@ body.secousse .ecran.actif, body.secousse .speciale { animation: secousse .45s; 
 /* Mode caméra : la trace a la luminosité moyenne du fond, seule sa teinte (un peu de bleu, moins de rouge) diffère.
    L'œil ne la distingue presque pas dans le noir ; le téléphone amplifie l'écart bleu − rouge et la fait apparaître.
    Tout le reste passe en gris neutre (écart nul), pour que seule la trace s'allume. */
-.uv-camera .dr-img { filter: grayscale(1) contrast(.35) brightness(.2); }
-.uv-camera .dr-uv .trace { stroke: rgb(19,25,33); filter: none; }
-.uv-camera .uv-num { color: rgb(19,25,33); text-shadow: none; }
+.uv-camera .dr-img { filter: grayscale(1) contrast(.22) brightness(.2); }
+.uv-camera .dr-uv .trace { stroke: rgb(16,20,26); filter: none; }
+.uv-camera .uv-num { color: rgb(16,20,26); text-shadow: none; }
+.uv-camera .dr-uv::after { content: ""; position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"); mix-blend-mode: overlay; opacity: .9; }
 .uv-camera .plaque { background: #2e2e2e; border-color: #444; color: rgba(228,228,228,.82); }
 .uv-camera .plaque i { color: rgba(228,228,228,.6); }
 .s-ramper { grid-template-rows: 1fr; }
