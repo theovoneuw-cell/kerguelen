@@ -58,7 +58,7 @@ details[open] > summary::before { transform: rotate(45deg); }
 #detecteur .note { margin-top: 3em; text-align: center; }
 
 /* Instruments */
-.instrument { position: fixed; inset: 0; z-index: 10; background: rgba(6,8,10,.97); display: grid; place-content: center; padding: 24px; text-align: center; }
+.instrument { position: fixed; inset: 0; z-index: 10; background: #06080a; display: grid; place-content: center; padding: 24px; text-align: center; }
 .instrument h2 { font-family: var(--f-titre); font-weight: 600; font-size: 1.8rem; margin: 0 0 14px; }
 .ins-consigne { color: var(--doux); max-width: 30ch; margin: 14px auto; }
 .ins-compte { font-family: "IBM Plex Mono", monospace; color: var(--vigie); min-height: 1.5em; }
