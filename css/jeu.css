@@ -515,10 +515,14 @@ body.secousse .ecran.actif, body.secousse .speciale { animation: secousse .45s; 
 .dr-uv .trace { fill: none; stroke: #c9b6ff; stroke-width: 2.6; stroke-linecap: round; filter: drop-shadow(0 0 2px #a07bff); }
 .dr-uv .trace.fine { stroke-width: 1.4; }
 .uv-num { position: absolute; transform: translate(-50%, -50%) rotate(-6deg); font: 700 clamp(30px, 4vw, 60px) var(--f-titre); color: #d7c8ff; text-shadow: 0 0 10px #8a5cff; }
-/* Mode caméra : la trace est à peine plus claire que le fond ; seul le téléphone, en poussant le contraste, la fait apparaître. */
+/* Mode caméra : la trace a la luminosité moyenne du fond, seule sa teinte (un peu de bleu, moins de rouge) diffère.
+   L'œil ne la distingue presque pas dans le noir ; le téléphone amplifie l'écart bleu − rouge et la fait apparaître.
+   Tout le reste passe en gris neutre (écart nul), pour que seule la trace s'allume. */
 .uv-camera .dr-img { filter: brightness(.13) grayscale(1); }
-.uv-camera .dr-uv .trace { stroke: rgb(52,52,56); filter: none; }
-.uv-camera .uv-num { color: rgb(56,56,60); text-shadow: none; }
+.uv-camera .dr-uv .trace { stroke: rgb(5,7,15); filter: none; }
+.uv-camera .uv-num { color: rgb(5,7,15); text-shadow: none; }
+.uv-camera .plaque { background: #2e2e2e; border-color: #444; color: rgba(228,228,228,.82); }
+.uv-camera .plaque i { color: rgba(228,228,228,.6); }
 .s-ramper { grid-template-rows: 1fr; }
 .rp-img { position: absolute; inset: 0; background: center/cover no-repeat; transition: transform 6s ease-out; filter: brightness(.7); }
 .rp-tete { position: absolute; left: 44%; top: 40%; width: 13%; aspect-ratio: 16/9; background: center 30%/cover no-repeat; opacity: 0; filter: brightness(.55) contrast(1.2) blur(.4px); -webkit-mask-image: radial-gradient(ellipse 50% 50% at center, #000 40%, transparent 72%); mask-image: radial-gradient(ellipse 50% 50% at center, #000 40%, transparent 72%); }

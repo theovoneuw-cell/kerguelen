@@ -186,14 +186,29 @@ $("#b-uv").onclick = async () => {
     if (!fluxCam) return;
     const w = 360, h = Math.round(w * (v.videoHeight || 9) / (v.videoWidth || 16)); c.width = w; c.height = h;
     g.drawImage(v, 0, 0, w, h);
-    const im = g.getImageData(0, 0, w, h), d = im.data, lum = new Uint8Array(w * h);
-    for (let i = 0, j = 0; i < d.length; i += 4, j++) lum[j] = (d[i] * 3 + d[i + 1] * 5 + d[i + 2] * 2) / 10;
-    // On étire l'histogramme entre les percentiles 5 et 99,5 : les écarts invisibles deviennent visibles.
+    const im = g.getImageData(0, 0, w, h), d = im.data, n = w * h, lum = new Uint8Array(n), ecart = new Float32Array(n);
+    // La trace du drone a la luminosité du fond mais une autre teinte : on mesure l'écart bleu − rouge de chaque point.
+    for (let i = 0, j = 0; i < d.length; i += 4, j++) { lum[j] = (d[i] * 3 + d[i + 1] * 5 + d[i + 2] * 2) / 10; ecart[j] = Math.max(0, d[i + 2] - d[i]); }
+    // Écart local : on retire la moyenne des alentours (image intégrale), pour ignorer la dominante de couleur de la pièce et de l'écran.
+    const R = 10, W1 = w + 1, integ = new Float64Array(W1 * (h + 1));
+    for (let y = 0; y < h; y++) { let s = 0; for (let x = 0; x < w; x++) { s += ecart[y * w + x]; integ[(y + 1) * W1 + x + 1] = integ[y * W1 + x + 1] + s; } }
+    const local = new Float32Array(n);
+    for (let y = 0; y < h; y++) {
+      const y0 = Math.max(0, y - R), y1 = Math.min(h, y + R + 1);
+      for (let x = 0; x < w; x++) { const x0 = Math.max(0, x - R), x1 = Math.min(w, x + R + 1); local[y * w + x] = ecart[y * w + x] - (integ[y1 * W1 + x1] - integ[y0 * W1 + x1] - integ[y1 * W1 + x0] + integ[y0 * W1 + x0]) / ((y1 - y0) * (x1 - x0)); }
+    }
+    const ech = []; for (let j = 0; j < n; j += 7) ech.push(local[j]); ech.sort((a, b) => a - b);
+    const haut = Math.max(6, ech[Math.floor(ech.length * .997)]);
+    // Fond : la luminosité, étirée entre les percentiles 5 et 99,5 puis assombrie, pour se repérer.
     const hist = new Uint32Array(256); for (const x of lum) hist[x]++;
-    let acc = 0, lo = 0, hi = 255; const n = lum.length;
+    let acc = 0, lo = 0, hi = 255;
     for (let k = 0; k < 256; k++) { acc += hist[k]; if (acc < n * .05) lo = k; if (acc < n * .995) hi = k; }
     const e = 255 / Math.max(4, hi - lo);
-    for (let i = 0, j = 0; i < d.length; i += 4, j++) { const y = Math.max(0, Math.min(255, (lum[j] - lo) * e)); const k = Math.pow(y / 255, 1.6) * 255; d[i] = k * .78; d[i + 1] = k * .6; d[i + 2] = Math.min(255, k * 1.15 + 18); }
+    for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+      const k = Math.pow(Math.max(0, Math.min(255, (lum[j] - lo) * e)) / 255, 1.6) * 150;
+      const lueur = Math.max(0, Math.min(1, (local[j] - 3) / (haut - 3))) * 255;
+      d[i] = Math.min(255, k * .7 + lueur * .85); d[i + 1] = Math.min(255, k * .55 + lueur * .7); d[i + 2] = Math.min(255, k * 1.05 + 14 + lueur);
+    }
     g.putImageData(im, 0, 0);
     rafCam = requestAnimationFrame(boucle);
   };
