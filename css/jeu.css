@@ -519,8 +519,8 @@ body.secousse .ecran.actif, body.secousse .speciale { animation: secousse .45s; 
    L'œil ne la distingue presque pas dans le noir ; le téléphone amplifie l'écart bleu − rouge et la fait apparaître.
    Tout le reste passe en gris neutre (écart nul), pour que seule la trace s'allume. */
 .uv-camera .dr-img { filter: grayscale(1) contrast(.12) brightness(.2); }
-.uv-camera .dr-uv .trace { stroke: rgb(19,23,30); filter: none; }
-.uv-camera .uv-num { color: rgb(19,23,30); text-shadow: none; }
+.uv-camera .dr-uv .trace { stroke: rgb(21,23,27); filter: none; }
+.uv-camera .uv-num { color: rgb(21,23,27); text-shadow: none; }
 .uv-camera .dr-uv::after { content: ""; position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"); mix-blend-mode: overlay; opacity: .9; }
 .uv-camera .plaque { background: #2e2e2e; border-color: #444; color: rgba(228,228,228,.82); z-index: 1; }   /* la trace passe sous les plaques */
 .uv-camera .plaque i { color: rgba(228,228,228,.6); }
