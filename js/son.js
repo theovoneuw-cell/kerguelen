@@ -141,8 +141,21 @@
     if (buf && ambCode === code) { ambCourante = lireTampon(buf, busAmb, { boucle: true, gain: 0 }); ambCourante.g.gain.linearRampToValueAtTime(1, ctx.currentTime + fondu); }
   }
   let musCourante = null, musCode = null;
+  // Audiodescription : la musique s'affiche aussi, le temps qu'elle démarre (prologue, cartons, fins)
+  const MUS_AD = { MUS_PROLOGUE: "Musique du prologue", MUS_FIN: "Musique de fin : Quarantaine", MUS_ECHEC: "Musique de fin : Gateway, À bord ou Silence" };
+  function decrireMusique(code) {
+    const z = zoneAD(); if (!z) return;
+    const n = /^MUS_0(\d)$/.exec(code), texte = MUS_AD[code] || (n ? `Musique du carton, chapitre ${["I", "II", "III", "IV", "V", "VI"][n[1] - 1]}` : "Musique");
+    const el = document.createElement("div");
+    el.className = "ad-son ou-haut"; el.style.top = "21%";
+    el.innerHTML = `<span class="ad-code">${code}</span><span class="ad-texte">[${texte}]</span>`;
+    z.appendChild(el);
+    requestAnimationFrame(() => el.classList.add("visible"));
+    setTimeout(() => { el.classList.remove("visible"); setTimeout(() => el.remove(), 600); }, 5000);
+  }
   async function musique(code, fondu = 3) {
-    if (AD || !ctx || code === musCode) return;
+    if (AD) { if (code && code !== musCode) decrireMusique(code); musCode = code; return; }
+    if (!ctx || code === musCode) return;
     musCode = code;
     if (musCourante) { const m = musCourante; m.g.gain.linearRampToValueAtTime(0, ctx.currentTime + fondu); setTimeout(() => m.s.stop(), fondu * 1000 + 100); musCourante = null; }
     if (!code) return;

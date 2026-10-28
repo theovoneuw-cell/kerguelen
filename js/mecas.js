@@ -225,9 +225,11 @@
       z.appendChild(el);
       $("button", el).onclick = async () => {
         const v = ($("input:checked", el) || {}).value; if (!v) return;
-        A.fermerCarte(); Son.jouer("SFX_ALARME"); await A.interphone(["VIGIE_26"]);
-        S.bete.fixe = v; S.bete.pos = v;
-        if (v === "sport") { S.flags.leurre = true; A.billet("Au détecteur, le point quitte la coursive D, file vers l'avant, monte d'un pont… et s'arrête tout au fond, à la salle de sport. Il ne bouge plus. Elle écoute l'alarme."); }
+        // La bête part dès la diffusion : VIGIE_26 peut attendre son tour derrière d'autres annonces
+        A.fermerCarte(); Son.jouer("SFX_ALARME");
+        S.bete.fixe = v; S.bete.pos = v; if (v === "sport") S.flags.leurre = true; A.sauver();
+        await A.interphone(["VIGIE_26"]);
+        if (v === "sport") { A.billet("Au détecteur, le point quitte la coursive D, file vers l'avant, monte d'un pont… et s'arrête tout au fond, à la salle de sport. Il ne bouge plus. Elle écoute l'alarme."); }
         else if (v === "machines") A.billet("Le point descend vers les machines. À l'interphone, Jo, très bas : « Pas ici… pas ici, bon sang. » Puis plus rien. Le point reste là, juste à côté de la coursive D.");
         else A.billet("Le point se déplace, puis s'arrête. Elle écoute. Regardez bien où elle est, maintenant.");
         A.sauver(); A.rendu();
