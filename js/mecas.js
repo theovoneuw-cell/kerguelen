@@ -41,10 +41,12 @@
     // ——— Contrôle biologique : un pouce par joueur
     pouce(m, z, A) {
       const total = Math.max(2, A.S.noms.filter(Boolean).length); let faits = 0;
-      const el = h(`<div class="m-pouce"><p class="m-compte"><b>0</b> / ${total} empreintes</p><p class="m-aide">${A.aDesTels() ? "Chacun pose le pouce sur le cercle d'un téléphone, et le garde jusqu'au bout. Avec deux téléphones pour trois, l'un des deux sert deux fois." : "Maintenez le bouton, une fois par joueur."}</p><button class="btn m-tenir">Maintenir ici</button></div>`);
+      const el = h(`<div class="m-pouce"><p class="m-compte"><b>0</b> / ${total} empreintes</p><p class="m-aide">${A.aDesTels() ? "Le contrôle s'affiche sur un seul téléphone : passez-le de main en main. Chacun pose le pouce sur le cercle, et le garde jusqu'au bout." : "Maintenez le bouton, une fois par joueur."}</p><button class="btn m-tenir">Maintenir ici</button></div>`);
       z.appendChild(el);
       const un = () => { faits++; $("b", el).textContent = faits; Son.jouer("SFX_BIP_OK"); if (faits >= total) { A.instrument("pouce", { on: false }); delete ecouteurs.pouce; A.fermerCarte(); setTimeout(() => A.effets(m.effets), 300); } };
-      A.instrument("pouce", { on: true, total });
+      // Un seul téléphone (celui du manuel de préférence) : on se le passe, comme au vrai contrôle.
+      const tl = [...A.tels.entries()], un1 = (tl.find(([, t]) => t.role === "manuel") || tl[0] || [])[0];
+      A.instrument("pouce", { on: true, total }, un1);
       ecouteurs.pouce = un;
       tenir($(".m-tenir", el), 2500, un, true);
       arret(() => { A.instrument("pouce", { on: false }); delete ecouteurs.pouce; });
@@ -112,7 +114,7 @@
 
     // ——— Le spectrogramme du chant
     spectre(m, z, A) {
-      const el = h(`<div class="m-spectre"><canvas width="760" height="360"></canvas><button class="btn btn-petit m-lire">${A.AD ? "Décrire le son" : "Écouter"}</button></div>`);
+      const el = h(`<div class="m-spectre"><canvas width="760" height="460"></canvas><p class="m-aide">Passez la souris sur le spectrogramme : la règle verte donne la fréquence.</p><button class="btn btn-petit m-lire">${A.AD ? "Décrire le son" : "Écouter"}</button></div>`);
       z.appendChild(el);
       dessinerSpectre($("canvas", el), [2, 6, 7, 3]);
       $(".m-lire", el).onclick = () => Son.chant();
@@ -142,14 +144,22 @@
 
     // ——— La porte de la Chambre : son écran dit où on en est (badge, voix) et ce qu'elle attend ; le montage de la voix de Varek
     montage(m, z, A) {
-      const S = A.S, badge = !!S.flags.badgeCommandant, dicta = A.enMain(90);
+      const S = A.S, badge = !!S.flags.badgeCommandant, voix = !!S.flags.voixVarek, dicta = A.enMain(90) || voix;
+      // Peu importe l'ordre : la voix acceptée avant le badge est gardée, la porte s'ouvre dès que les deux y sont.
+      const ouvrir = async () => {
+        S.flags.chambre = true; A.fermerCarte(); Son.jouer("SFX_PORTE"); A.sauver();
+        await A.interphone(["VAREK_MONTAGE", "VIGIE_22"]);
+        A.aller("vigie");
+      };
+      if (badge && voix && !S.flags.chambre) { setTimeout(ouvrir, 600); }
       const etat = (ok, oui, non) => `<span class="pt-etat ${ok ? "ok" : ""}">${ok ? oui : non}</span>`;
       z.appendChild(h(`<div class="doc-ecran pt-ecran">CHAMBRE DE VIGIE — ACCÈS RESTREINT<br>DEUX AUTORISATIONS D'OFFICIER REQUISES<br><br>
         1. BADGE D'OFFICIER ${etat(badge, "ACCEPTÉ — H. LEMAIRE, OFFICIER N° 1", "EN ATTENTE")}<br>
-        2. EMPREINTE VOCALE ${etat(false, "", "EN ATTENTE")}<br><br>
+        2. EMPREINTE VOCALE ${etat(voix, "ACCEPTÉE — I. VAREK, OFFICIER SCIENTIFIQUE", "EN ATTENTE")}<br><br>
         PHRASE D'AUTHENTIFICATION :<br>NOM · FONCTION · « J'AUTORISE L'ACCÈS » · CODE DU JOUR<br>
         CODE DU JOUR : AFFICHÉ SUR L'ÉCRAN DE QUART (PASSERELLE)</div>`));
       if (!badge) z.appendChild(h(`<p class="m-aide">Badge : glissez la carte d'un officier sur la porte.</p>`));
+      if (voix) return;
       if (!dicta) { z.appendChild(h(`<p class="m-aide">Voix : il faut la voix enregistrée d'un officier. Le seul officier qui vous ait parlé, c'était Varek.</p>`)); return; }
       // Les mots se coupent aussi après une apostrophe : « qu'officier » donne « qu' » et « officier ».
       const clips = [1, 2, 3, 4, 5, 6].map(i => ({ i, mots: A.J.VOIX["VAREK_D" + i][2].replace(/[.,:]/g, "").split(/\s+/).filter(Boolean).flatMap(w => { const k = w.indexOf("'"); return k > 0 && k < w.length - 1 ? [w.slice(0, k + 1), w.slice(k + 1)] : [w]; }) }));
@@ -167,12 +177,13 @@
       $(".mt-envoyer", el).onclick = async () => {
         const norme = t => t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[’]/g, "'");
         const phrase = norme(montage.map(x => x.w).join(" ").replace(/' /g, "'"));
-        const ok = phrase === "ilan varek officier scientifique j'autorise l'acces quarante-sept";
-        if (ok && !S.flags.badgeCommandant) { A.toast("La voix est bonne. Il manque la première autorisation : un badge d'officier."); return; }
+        // Comme le dit le manuel (niveau 4), l'empreinte doit « contenir, dans l'ordre » les quatre éléments :
+        // peu importe les mots autour (« ici », « en tant qu' »…), du moment que rien ne s'intercale dans un élément.
+        const ok = /(^| )varek .*officier scientifique .*j'autorise l'acces .*quarante-sept( |$)/.test(phrase);
         if (!ok) { await A.interphone(["VIGIE_23"]); A.ajouterBruit(5); return; }
-        S.flags.chambre = true; A.fermerCarte(); Son.jouer("SFX_PORTE"); A.sauver();
-        await A.interphone(["VAREK_MONTAGE", "VIGIE_22"]);
-        A.aller("vigie");
+        S.flags.voixVarek = true; A.sauver();
+        if (!S.flags.badgeCommandant) { A.toast("Empreinte vocale acceptée. Il manque la première autorisation : un badge d'officier.", 4200); A.fermerCarte(); A.ouvrirCarte(104); return; }
+        ouvrir();
       };
     },
 
@@ -208,7 +219,8 @@
           S.flags.silenceVigie = true; A.sauver();
           await A.attendre(700); document.body.classList.add("panne"); await A.interphone(["VIGIE_13"]);
           const avant = S.bete.pos; S.bete.pos = "passerelle";
-          const ok = await A.silence({ duree: 22000 });
+          // Un silence vient d'avoir lieu : la lumière tombe, mais ça passe sans s'arrêter.
+          const ok = A.silenceRecent() ? (await A.attendre(5000), true) : await A.silence({ duree: 22000 });
           document.body.classList.remove("panne");
           if (!ok) { A.fermerCarte(); A.rencontre({ fuir: false }); } else { S.bete.pos = avant === "passerelle" ? "condA" : avant; ecrire("Mouvement : pont A → pont B."); }
         }
@@ -297,22 +309,54 @@
     m.hidden = false;
   };
 
+  // Le spectrogramme est dessiné à la résolution réelle de l'écran, sur une échelle resserrée (100 à 310 Hz : les huit notes
+  // et quelques harmoniques), avec une graduation tous les 10 Hz. Sous la souris, une règle donne la fréquence exacte.
   function dessinerSpectre(c, sequence) {
-    const g = c.getContext("2d"), W = c.width, H = c.height, x0 = 56, y0 = 18, w = W - x0 - 14, hh = H - y0 - 34;
-    const fMin = 100, fMax = 520, y = f => y0 + hh - (f - fMin) / (fMax - fMin) * hh;
-    g.fillStyle = "#05070a"; g.fillRect(0, 0, W, H);
-    // bruit de fond
-    for (let i = 0; i < 2600; i++) { g.fillStyle = `rgba(80,140,255,${Math.random() * .12})`; g.fillRect(x0 + Math.random() * w, y0 + Math.random() * hh, 2, 2); }
-    // grille
-    g.font = "12px 'IBM Plex Mono', monospace"; g.textAlign = "right";
-    for (let f = fMin; f <= fMax; f += 10) { const yy = y(f); g.strokeStyle = f % 50 === 0 ? "rgba(200,220,255,.28)" : "rgba(200,220,255,.08)"; g.beginPath(); g.moveTo(x0, yy); g.lineTo(x0 + w, yy); g.stroke(); if (f % 50 === 0) { g.fillStyle = "#9fb3c8"; g.fillText(f + " Hz", x0 - 6, yy + 4); } }
-    g.textAlign = "center"; g.fillStyle = "#9fb3c8"; [0, 1, 2, 3, 4].forEach(s => g.fillText(s + " s", x0 + s / 4 * w, H - 12));
-    // les quatre notes et leurs harmoniques
-    sequence.forEach((k, i) => {
-      const f = Son.NOTES[k - 1], xa = x0 + (i * .95 + .15) / 4 * w, xb = xa + .8 / 4 * w;
-      [[1, .95], [2, .45], [3, .22]].forEach(([mul, a]) => { const ff = f * mul; if (ff > fMax) return; const grad = g.createLinearGradient(xa, 0, xb, 0); grad.addColorStop(0, `rgba(255,200,90,0)`); grad.addColorStop(.12, `rgba(255,200,90,${a})`); grad.addColorStop(.85, `rgba(255,160,60,${a * .8})`); grad.addColorStop(1, `rgba(255,140,40,0)`); g.fillStyle = grad; g.fillRect(xa, y(ff) - 2.5, xb - xa, 5); });
-    });
-    g.strokeStyle = "rgba(200,220,255,.4)"; g.strokeRect(x0, y0, w, hh);
+    const W = 760, H = 460, x0 = 64, y0 = 16, w = W - x0 - 14, hh = H - y0 - 36;
+    const fMin = 100, fMax = 310, y = f => y0 + hh - (f - fMin) / (fMax - fMin) * hh, f = yy => fMin + (y0 + hh - yy) / hh * (fMax - fMin);
+    const fond = document.createElement("canvas");
+    let k = 1;
+    const base = () => {
+      k = Math.max(1, (c.getBoundingClientRect().width || W) / W) * (window.devicePixelRatio || 1);
+      c.width = fond.width = Math.round(W * k); c.height = fond.height = Math.round(H * k);
+      const g = fond.getContext("2d"); g.setTransform(k, 0, 0, k, 0, 0);
+      g.fillStyle = "#05070a"; g.fillRect(0, 0, W, H);
+      // bruit de fond, toujours le même
+      let r = 7; const alea = () => (r = (r * 16807) % 2147483647) / 2147483647;
+      for (let i = 0; i < 1800; i++) { g.fillStyle = `rgba(80,140,255,${alea() * .07})`; g.fillRect(x0 + alea() * w, y0 + alea() * hh, 1.5, 1.5); }
+      // grille : un trait tous les 10 Hz, plus marqué tous les 50
+      g.font = "600 12px 'IBM Plex Mono', monospace"; g.textAlign = "right";
+      for (let ff = fMin; ff <= fMax; ff += 10) {
+        const yy = Math.round(y(ff)) + .5, fort = ff % 50 === 0;
+        g.strokeStyle = fort ? "rgba(200,220,255,.34)" : "rgba(200,220,255,.13)"; g.lineWidth = 1;
+        g.beginPath(); g.moveTo(x0 - (fort ? 8 : 4), yy); g.lineTo(x0 + w, yy); g.stroke();
+        g.fillStyle = fort ? "#c9d6e3" : "#7f93a8"; g.fillText(ff, x0 - 10, yy + 4);
+      }
+      g.save(); g.translate(14, y0 + hh / 2); g.rotate(-Math.PI / 2); g.textAlign = "center"; g.fillStyle = "#9fb3c8"; g.fillText("fréquence (Hz)", 0, 0); g.restore();
+      g.textAlign = "center"; g.fillStyle = "#9fb3c8"; [0, 1, 2, 3, 4].forEach(t => g.fillText(t + " s", x0 + t / 4 * w, H - 12));
+      // les quatre notes : un trait net au centre, un halo autour ; les harmoniques, plus pâles
+      sequence.forEach((n, i) => {
+        const fn = Son.NOTES[n - 1], xa = x0 + (i * .95 + .15) / 4 * w, xb = xa + .8 / 4 * w;
+        [[2, .32], [1, 1]].forEach(([mul, a]) => {
+          const yy = y(fn * mul); if (fn * mul > fMax) return;
+          const grad = g.createLinearGradient(xa, 0, xb, 0); grad.addColorStop(0, "rgba(255,190,80,0)"); grad.addColorStop(.06, `rgba(255,190,80,${a * .35})`); grad.addColorStop(.94, `rgba(255,150,50,${a * .3})`); grad.addColorStop(1, "rgba(255,140,40,0)");
+          g.fillStyle = grad; g.fillRect(xa, yy - 5, xb - xa, 10);
+          g.fillStyle = `rgba(255,226,160,${a})`; g.fillRect(xa + 4, yy - 1, xb - xa - 8, 2);
+        });
+      });
+      g.strokeStyle = "rgba(200,220,255,.45)"; g.strokeRect(x0 + .5, y0 + .5, w, hh);
+    };
+    const peindre = (sy = null) => {
+      const g = c.getContext("2d"); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(fond, 0, 0); g.setTransform(k, 0, 0, k, 0, 0);
+      if (sy === null || sy < y0 || sy > y0 + hh) return;
+      g.strokeStyle = "rgba(120,255,190,.75)"; g.setLineDash([4, 3]); g.beginPath(); g.moveTo(x0, sy); g.lineTo(x0 + w, sy); g.stroke(); g.setLineDash([]);
+      const t = `${Math.round(f(sy))} Hz`; g.font = "700 13px 'IBM Plex Mono', monospace";
+      const tw = g.measureText(t).width + 12, ty = Math.max(y0 + 2, Math.min(y0 + hh - 20, sy - 10));
+      g.fillStyle = "rgba(5,7,10,.92)"; g.fillRect(x0 + w - tw - 4, ty, tw, 20); g.fillStyle = "#9dffc9"; g.textAlign = "right"; g.fillText(t, x0 + w - 10, ty + 14);
+    };
+    requestAnimationFrame(() => { base(); peindre(); });
+    c.addEventListener("pointermove", e => { const b = c.getBoundingClientRect(); peindre((e.clientY - b.top) / b.height * H); });
+    c.addEventListener("pointerleave", () => peindre());
   }
 
   // ——————————————————————————————————————————————— Scènes plein écran
@@ -411,6 +455,7 @@
     Son.ambiance("AMB_CONDUITS");
     await plan("l-conduit-long", "Vous rampez l'un derrière l'autre. Le métal est froid, mouillé. Vos genoux font un bruit terrible, à chaque mouvement.", 6000, "scale(1.05)");
     await plan("l-conduit-long", "Quelque chose, loin devant, gratte le métal. Puis se tait.", 4000, "scale(1.12)");
+    if (A.silenceRecent()) { await plan("l-conduit-long", "Vous attendez, sans respirer. Rien ne vient. Vous repartez.", 4000, "scale(1.15)"); M.ramper2(A); return; }
     Son.jouer("BETE_COURSE");
     const ok = await A.silence({ duree: 20000, video: "v-conduit" });
     if (!ok) { finScene(); await A.rencontre({ fuir: false }); if (A.S.etape !== "jeu") return; M.ramper2(A); return; }

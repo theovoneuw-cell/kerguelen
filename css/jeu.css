@@ -231,8 +231,9 @@ body.pret #titre .titre-contenu { --ty: -50%; }
 .scene-noir { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle var(--rayon) at var(--lx) var(--ly), rgba(0,0,0,0) 0, rgba(0,0,0,.1) 45%, rgba(0,0,0,.5) 100%); transition: background .1s; }
 .scene-noir::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle calc(var(--rayon) * 2.6) at var(--lx) var(--ly), transparent 30%, rgba(0,0,0,.3) 100%); }
 body.panne .scene-noir { background: radial-gradient(circle calc(var(--rayon) * .7) at var(--lx) var(--ly), rgba(40,0,0,0) 0, rgba(20,0,0,.97) 100%); }
-.nombre-cache { position: absolute; transform: translate(-50%, -50%) rotate(var(--r)); font-family: var(--f-titre); font-weight: 700; font-size: clamp(14px, 1.7vw, 24px); color: rgba(236, 228, 208, .72); letter-spacing: .02em; text-shadow: 0 0 2px rgba(0,0,0,.6); pointer-events: none; mix-blend-mode: screen; }
+.nombre-cache { position: absolute; transform: translate(var(--tx, -50%), -50%) rotate(var(--r)); font-family: var(--f-titre); font-weight: 700; font-size: clamp(14px, 1.7vw, 24px); color: rgba(236, 228, 208, .72); letter-spacing: .02em; text-shadow: 0 0 2px rgba(0,0,0,.6); pointer-events: none; mix-blend-mode: screen; }
 .nombre-cache.pris { opacity: .28; }
+.nombre-cache.sur-ecran { mix-blend-mode: normal; color: #0b1014; text-shadow: 0 0 2px rgba(236,228,208,.95), 0 0 6px rgba(236,228,208,.8), 0 0 12px rgba(236,228,208,.5); }
 .scene-legende { position: absolute; z-index: 11; left: 18px; top: calc(var(--haut) + 12px); width: max-content; max-width: min(380px, 32vw); padding: 8px 12px 10px; background: rgba(7,11,14,.86); border: 1px solid var(--ligne-2); }
 .scene-legende[data-coin="hd"] { left: auto; right: 18px; }
 .scene-legende[data-coin="bg"] { top: auto; bottom: calc(var(--bas) + 12px); }
@@ -242,6 +243,10 @@ body.panne .scene-noir { background: radial-gradient(circle calc(var(--rayon) * 
 .scene-sorties .btn-petit { padding: .25em .6em; font-size: .8rem; }
 .scene-sorties { display: flex; flex-wrap: wrap; gap: 5px; }
 .sortie::before { content: ""; display: inline-block; width: .75em; height: .75em; margin-right: .4em; vertical-align: -.05em; background: currentColor; opacity: .6; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%23000' stroke-width='1.6'%3E%3Cpath d='M1 6h9M6.5 2.5 10 6l-3.5 3.5'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%23000' stroke-width='1.6'%3E%3Cpath d='M1 6h9M6.5 2.5 10 6l-3.5 3.5'/%3E%3C/svg%3E") center/contain no-repeat; }
+.sortie.nouvelle { color: var(--accent); border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 16px rgba(227,163,58,.5); animation: sortie-appel 1.8s ease-in-out infinite; }
+.sortie.nouvelle::before { opacity: 1; }
+@keyframes sortie-appel { 50% { box-shadow: 0 0 0 1px var(--accent), 0 0 26px rgba(227,163,58,.85); background: rgba(227,163,58,.14); } }
+@media (prefers-reduced-motion: reduce) { .sortie.nouvelle { animation: none; } }
 .sortie .verrou { color: var(--pale); font-size: .8em; margin-left: .3em; }
 
 .main-joueur { position: absolute; z-index: 13; right: 0; top: var(--haut); bottom: var(--bas); width: 340px; padding: 14px; overflow: auto; background: rgba(10,16,20,.96); border-left: 1px solid var(--ligne-2); transform: translateX(100%); visibility: hidden; transition: transform .32s cubic-bezier(.2,.8,.2,1), visibility 0s .32s; }

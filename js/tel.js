@@ -111,16 +111,17 @@ function orientation(e) {
 const tampon = new Float32Array(2048);
 let historique = [], silenceOn = false, seuil = -40, depasses = 0, souffleOn = false, souffleFrames = 0, essaiFin = 0;
 function niveau() { if (!analyseur) return -90; analyseur.getFloatTimeDomainData(tampon); let s = 0; for (let i = 0; i < tampon.length; i++) s += tampon[i] * tampon[i]; return 20 * Math.log10(Math.sqrt(s / tampon.length) + 1e-9); }
-function fond() { const t = [...historique].sort((a, b) => a - b); return t.length ? t[Math.floor(t.length * .3)] : -60; }
+// Le fond de la pièce se mesure sur la dernière minute (les moments calmes), pas sur les secondes où l'on parlait encore.
+function fond() { const t = [...historique].sort((a, b) => a - b); return t.length ? t[Math.floor(t.length * .1)] : -60; }
 setInterval(() => {
   if (!analyseur) return;
   const db = niveau();
-  if (!silenceOn) { historique.push(db); if (historique.length > 60) historique.shift(); }
+  if (!silenceOn) { historique.push(db); if (historique.length > 600) historique.shift(); }
   let depasse = false;
   if (silenceOn) {
-    // Un bruit doit durer un demi-seconde pour compter, et le téléphone ne s'entend pas biper lui-même.
+    // Un bruit doit durer trois dixièmes de seconde pour compter (un mot chuchoté suffit), et le téléphone ne s'entend pas biper lui-même.
     if (db > seuil && performance.now() - dernierBip > 300) depasses++; else depasses = 0;
-    depasse = depasses >= 5;
+    depasse = depasses >= 3;
     $("#silence-niveau").style.width = Math.max(0, Math.min(100, (db + 80) * 1.25)) + "%";
     if (depasse) vibrer(200);
   }
@@ -157,7 +158,7 @@ function instrument(d) {
   if (d.nom === "uv" && !d.on) fermerCamera();
   if (d.nom === "silence") {
     silenceOn = !!d.on; depasses = 0;
-    seuil = Math.max(fond() + 18, -50);
+    seuil = Math.max(fond() + 9, -58);
     $("#silence-seuil").style.left = Math.max(0, Math.min(100, (seuil + 80) * 1.25)) + "%";
     montrer("ins-silence", d.on); document.body.classList.toggle("en-silence", silenceOn);
     $("#sil-det").hidden = !(silenceOn && detecteurActif && (role === "detecteur" || role === "deux"));

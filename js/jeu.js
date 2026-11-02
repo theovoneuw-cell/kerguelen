@@ -236,6 +236,14 @@ async function approche() {
     S.bruit = Math.max(0, S.bruit - 30); S.bete.prochain = 25000;
   } else rencontre();
 }
+function esquive(v) {
+  let ailleurs = lieu(v).voisins.filter(x => peutAllerBete(x) && x !== S.lieu && x !== v);
+  // Cul-de-sac : elle est repartie par les conduits, loin.
+  if (!ailleurs.length) ailleurs = Object.keys(J.LIEUX).filter(x => peutAllerBete(x) && (chemin(v, x) || []).length > 3);
+  if (!ailleurs.length) return;
+  S.bete.pos = ailleurs[Math.floor(Math.random() * ailleurs.length)];
+  Son.jouer("BETE_RACLE"); toast("Un raclement au-dessus de vous : quelque chose vient de quitter la pièce.", 3600);
+}
 // Entrer là où elle se trouve : on a le temps de se taire et de reculer avant qu'elle ne se retourne.
 async function surprise(v) {
   S.precedent = S.lieu; S.lieu = v; rendu();
@@ -246,7 +254,10 @@ async function surprise(v) {
 }
 
 // ——————————————————————————————————————————————— Le silence réel
-let silenceEnCours = null, masquerSilence = 0, silencesLances = 0;
+let silenceEnCours = null, masquerSilence = 0, silencesLances = 0, finDernierSilence = -Infinity;
+// Jamais deux silences d'affilée : les silences imprévus attendent la fin du répit (S.bete.calme), les silences de l'histoire
+// se jouent sans silence s'il y en a eu un il y a moins de trois minutes.
+const silenceRecent = () => performance.now() - finDernierSilence < 3 * MIN;
 // D'abord « SILENCE » et un compte de 3 secondes pendant lequel rien ne compte (le temps de se taire).
 // Ensuite, le premier bruit est une alerte (elle s'arrête, le silence s'allonge un peu) ; le deuxième la fait attaquer.
 // Après chaque silence, elle laisse les joueurs tranquilles quelques minutes (S.bete.calme).
@@ -299,7 +310,7 @@ function silence({ duree = 18000, raison = "", video = null, avant = null, sous 
     let t = setTimeout(() => terminer(true), prepa + duree);
     function terminer(ok) {
       if (fini) return; fini = true; clearTimeout(t); clearInterval(passes); clearInterval(anim); clearInterval(decompte); clearInterval(det);
-      S.bete.calme = 4 * MIN;
+      S.bete.calme = 4 * MIN; finDernierSilence = performance.now();
       document.removeEventListener("keydown", clavier, true); el.removeEventListener("pointerdown", clic);
       silenceEnCours = null; instrument("silence", { on: false }); Son.silence(false);
       if (ok) { el.classList.remove("on"); masquerSilence = setTimeout(() => { el.hidden = true; }, 700); toast("Elle s'éloigne.", 2600); }
@@ -329,7 +340,7 @@ async function rencontre({ fuir = true } = {}) {
   if (fuir && S.precedent && S.precedent !== S.lieu) { S.lieu = S.precedent; S.precedent = null; }
   const loin = Object.keys(J.LIEUX).filter(v => peutAllerBete(v) && (chemin(S.lieu, v) || []).length > 3);
   if (loin.length) S.bete.pos = loin[Math.floor(Math.random() * loin.length)];
-  S.bete.prochain = 40000; S.bete.calme = 4 * MIN;
+  S.bete.prochain = 40000; S.bete.calme = 4 * MIN; finDernierSilence = performance.now();
   rendu(); sauver(); rencontreEnCours = false;
   billet(S.rencontres === 1 ? "Elle était là. Vous avez fui sans savoir comment, sans vous retourner, et vous vous êtes arrêtés quand vos jambes n'ont plus voulu.<br><br><b>Première rencontre.</b> Il n'y en aura pas beaucoup d'autres." : "Encore elle. Plus près, cette fois. Vous avez senti son souffle.<br><br><b>Deuxième rencontre.</b> Elle connaît votre odeur, maintenant. Elle ne vous lâchera plus.");
 }
@@ -455,12 +466,32 @@ function majHaut() {
 }
 // Remet d'aplomb une partie abîmée par un ancien bug, à la reprise comme en cours de jeu.
 // Parties revenues au chapitre IV après la mort de Varek (la reptation rejouée relançait le chapitre) : on les remet au chapitre V.
+// Une carte ne reste pas dans le sac une fois son travail fait. On garde ce qui servira plus loin
+// (la balise et SAS B3, le pupitre d'annonces, l'ordre, la liste d'équipage, les preuves).
+const USEES = [
+  [21, () => S.flags.porteSas && drapeau("manuel1")],   // la porte intérieure et PÉTREL au dos
+  [40, () => S.flags.coffreOuvert],
+  [51, () => S.flags.balise],
+  [60, () => S.flags.grille],
+  [61, () => S.flags.oreiller],
+  [63, () => S.flags.arandaOuvert],
+  [71, () => S.chap >= 3],
+  [82, () => S.flags.terminalLabo],
+  [88, () => drapeau("manuel3")],
+  [66, () => S.flags.grappe && possede(109)],
+  [86, () => S.flags.grappe && possede(109)],
+  [47, () => S.flags.badgeCommandant], [90, () => S.flags.chambre], [102, () => S.flags.chambre], [104, () => S.flags.chambre],
+  [115, () => S.flags.cleInseree],
+  [117, () => S.flags.mazoutABord]
+];
 function reparerPartie() {
   if (S && S.etape === "jeu" && S.chap === 3 && S.flags.varekMort) { S.chap = 4; if (S.point && S.point.chap === 3) S.point.chap = 4; sauver(); }
   // L'écran de quart (102, le code du jour) se défaussait une fois lu : il reste désormais dans le sac jusqu'à la porte de la Chambre.
   if (S && S.chap === 4 && !S.flags.chambre && S.defausse.includes(102)) { reveler(102); sauver(); }
   // Le pupitre d'annonces (103) partait à la défausse au changement de chapitre : il sert au leurre du chapitre VI, on le rend.
   if (S && S.chap === 5 && !S.flags.leurre && S.defausse.includes(103)) { reveler(103); sauver(); }
+  // Les cartes qui ont servi quittent le sac (voir USEES).
+  if (S && S.etape === "jeu") USEES.forEach(([n, fait]) => { if (enMain(n) && fait()) { defausser(n); sauver(); } });
 }
 function rendu() {
   if (!S) return;
@@ -520,6 +551,8 @@ function elCarte(n) {
   glisser(el, n);
   return el;
 }
+// Numéros posés sur un écran allumé : en clair, ils se fondaient dans la lumière. Ils passent en sombre, cernés de clair.
+const SUR_ECRAN = new Set([84]);
 function renduScene() {
   const L = lieu(S.lieu), img = $("#scene-img"), src = `${RACINE}img/${L.image}.jpg`;
   if (img.getAttribute("src") !== src) { img.src = src; $("#scene-fond").style.backgroundImage = `url('${src}')`; }
@@ -531,14 +564,21 @@ function renduScene() {
     if (si && !S.flags[si]) return;
     const s = document.createElement("span");
     s.className = "nombre-cache" + (enMain(num) || S.defausse.includes(num) ? " pris" : "");
-    s.textContent = num; s.style.left = x + "%"; s.style.top = y + "%"; s.style.setProperty("--r", (((num * 13) % 9) - 4) + "deg");
+    s.textContent = num; s.style.left = x + "%"; s.style.top = y + "%";
+    // Tout au bord de l'image, le numéro s'appuie vers l'intérieur au lieu d'être coupé.
+    if (SUR_ECRAN.has(num)) s.classList.add("sur-ecran");
+    if (x > 94) s.style.setProperty("--tx", "-100%"); else if (x < 6) s.style.setProperty("--tx", "0%"); s.style.setProperty("--r", (((num * 13) % 9) - 4) + "deg");
     calques.appendChild(s);
   });
   // Sorties
+  // Une sortie qui vient de s'ouvrir (jamais visitée, ou vue fermée avant) s'allume jusqu'à ce qu'on y entre : l'œil ne la voyait pas.
   const z = $("#scene-sorties"); z.innerHTML = "";
+  S.vus["lieu-" + S.lieu] = true; S.vusFermes = S.vusFermes || {}; delete S.vusFermes[S.lieu];
   L.voisins.filter(v => !lieu(v).cache && visible(v)).forEach(v => {
     const b = document.createElement("button"); b.className = "btn btn-petit sortie";
     const ok = ouvert(v);
+    if (ok !== true) S.vusFermes[v] = true;
+    else if (!S.vus["lieu-" + v] || S.vusFermes[v]) b.classList.add("nouvelle");
     b.innerHTML = `${lieu(v).nom}${ok === true ? "" : ` <span class="verrou">${ok}</span>`}`;
     b.onclick = () => aller(v);
     z.appendChild(b);
@@ -570,11 +610,12 @@ function aller(v) {
     billet(`<p><b>Elle est là.</b> Le détecteur s'affole dès que vous approchez : la bête s'est postée dans la coursive D, juste derrière la porte, entre vous et la chaloupe. Y entrer maintenant, c'est mourir.</p><p>Elle chasse au son. Il faut l'attirer ailleurs, loin de votre chemin : sur la passerelle, le <b>pupitre d'annonces</b> (103) diffuse une alarme dans la section de votre choix.</p>`);
     return;
   }
-  if (S.bete.active && S.bete.pos === v) { surprise(v); return; }
+  // Juste après un silence, pas de deuxième d'affilée : elle quitte la pièce avant que vous n'entriez.
+  if (S.bete.active && S.bete.pos === v) { if (S.bete.calme > 0 && !S.bete.fixe) esquive(v); else { surprise(v); return; } }
   S.precedent = S.lieu; S.lieu = v; ajouterBruit(2, true);
   rendu(); sauver();
   entree(v);
-  if (S.bete.active && S.bete.fixe && lieu(v).voisins.includes(S.bete.pos)) setTimeout(approcheAffut, 900);
+  if (S.bete.active && S.bete.fixe && lieu(v).voisins.includes(S.bete.pos) && !(S.bete.calme > 0)) setTimeout(approcheAffut, 900);
 }
 // Ce qui se passe à l'entrée d'un lieu
 function entree(v) {
@@ -610,14 +651,16 @@ function placerLegende() {
 function ajusterScene() {
   const table = $("#table"), cadre = $("#scene-cadre"), b = $("#scene-boite"); const W = cadre.clientWidth, H = cadre.clientHeight;
   if (!W || !H) return;
-  const haut = $("#table > .barre-haut").offsetHeight, bas = $("#table > .barre-bas").offsetHeight, m = 10;
+  // Marge = la moitié d'un numéro à trois chiffres (taille de .nombre-cache) : un numéro au bord de l'image (le 104, à 98 %) reste entier.
+  const taille = Math.min(24, Math.max(14, innerWidth * .017));
+  const haut = $("#table > .barre-haut").offsetHeight, bas = $("#table > .barre-bas").offsetHeight, m = 10 + taille, my = 10 + taille * .7;
   table.style.setProperty("--haut", haut + "px"); table.style.setProperty("--bas", bas + "px");
   const { x0, x1, y0, y1 } = ETENDUE, demi = v => Math.max(.01, Math.abs(v / 100 - .5));
   // Centre de l'image au milieu de la zone libre entre les deux barres.
   const cy = haut + (H - haut - bas) / 2;
   let w = Math.max(W, H * 16 / 9);
   w = Math.min(w, (W / 2 - m) / demi(x0), (W / 2 - m) / demi(x1));
-  w = Math.min(w, (cy - haut - m) / demi(y0) * 16 / 9, (H - bas - m - cy) / demi(y1) * 16 / 9);
+  w = Math.min(w, (cy - haut - my) / demi(y0) * 16 / 9, (H - bas - my - cy) / demi(y1) * 16 / 9);
   const h = w * 9 / 16;
   Object.assign(b.style, { width: w + "px", height: h + "px", left: (W - w) / 2 + "px", top: cy - h / 2 + "px" });
   if (S && tableActive()) placerLegende();
@@ -679,6 +722,11 @@ async function sceneCantine() {
   await attendre(900); Son.jouer("SFX_GOUTTE"); await attendre(1800);
   S.bete.pos = "condC"; await dire("VIGIE_12");
   await attendre(900);
+  if (silenceRecent()) {
+    S.bete.pos = "condB"; S.bete.prochain = 45000; Son.jouer("BETE_RACLE");
+    billet("Des clics passent au-dessus de vous, dans le plafond, sans s'arrêter, vers l'avant du vaisseau. Puis plus rien. Vous vous rendez compte que vous ne respiriez plus.");
+    quandBilletsFinis(() => ouvrirCarte(40)); return;
+  }
   const ok = await silence({ duree: 20000, video: "v-plafond" });
   if (!ok) { rencontre({ fuir: false }); return; }
   S.bete.pos = "condB"; S.bete.prochain = 45000;
@@ -710,7 +758,7 @@ document.addEventListener("keydown", e => { if (e.key !== "Escape" || silenceEnC
 
 // ——————————————————————————————————————————————— L'interface pour les mécanismes
 function api() {
-  return { J, get S() { return S; }, ecouterPiece, effets, reveler, defausser, rendu, sauver, toast, billet, quandBilletsFinis, interphone, ajouterBruit, retirerTemps, silence, rencontre, flash, attendre,
+  return { J, get S() { return S; }, ecouterPiece, effets, reveler, defausser, rendu, sauver, toast, billet, quandBilletsFinis, interphone, ajouterBruit, retirerTemps, silence, silenceRecent, rencontre, flash, attendre,
     instrument, tels, aDesTels, telAvecMicro, telAvecMouvement, fermerCarte, ouvrirCarte, enMain, media, chapitre, fin, aller, ecran, VIDEOS, RACINE, AD,
     echec: (msg, bruit = 6) => { Son.jouer("SFX_BIP_NON"); ajouterBruit(bruit); if (msg) toast(msg); },
     ouvrirDossier: (mode) => ouvrirDossier(mode), cine, rendreLieu: v => { S.lieu = v; rendu(); entree(v); } };
@@ -763,11 +811,27 @@ async function finChapitre1() {
   await chapitre(1);
   billet(`<p>Le <b>Dossier</b> d'enquête est ouvert (en bas de l'écran) : les quatre membres d'équipage qui pourraient porter la larve.</p><p>Chaque preuve que vous trouverez s'y inscrira, sur la fiche de la personne qu'elle concerne et sur la frise de la nuit du 16 novembre.</p>`);
 }
+function resteAFouillerPontC() {
+  // Les numéros encore à prendre dans les pièces du pont C (la grille 36 elle-même ne compte pas).
+  const l = chap().lieux.filter(v => S.ouverts.includes(v) && (J.NOMBRES[v] || []).some(([n, , , si]) => n !== 36 && (!si || S.flags[si]) && !possede(n))).map(v => `${lieu(v).nom.replace(/^L[ae] /, "la ")} (des numéros à trouver)`);
+  if (!S.flags.coffreOuvert) l.push("le coffre du commandant");
+  if (!S.flags.balise) l.push("le simulateur d'Okafor");
+  else if (!S.flags.morseLu) l.push("la balise d'Okafor (regardez le message jusqu'au bout)");
+  if (!S.flags.arandaOuvert) l.push("la cantine métallique d'Aranda");
+  return l;
+}
 function ouvrirGrille() {
   // Sans le schéma du manuel (niveau 2, FULMAR), le drone et la reptation ne sont pas jouables : on n'entre pas.
   if (!S.flags.fulmar) {
     Son.jouer("SFX_BIP_NON");
     billet(`<p><b>Vous n'avez pas le plan des conduits de ventilation.</b></p><p>La clé tourne dans le premier écrou, puis vous vous arrêtez. Derrière la grille, le réseau part dans tous les sens, sans un panneau. Sans plan, vous vous y perdriez, et elle y est peut-être.</p><p>Le schéma de ventilation est au manuel de bord, niveau 2. Il faut d'abord trouver son mot de passe.</p>`);
+    return;
+  }
+  // Une fois dans les conduits, on ne revient plus fouiller le pont C : on n'y entre qu'après avoir tout fouillé, pour ne pas se disperser.
+  const reste = resteAFouillerPontC();
+  if (reste.length) {
+    Son.jouer("SFX_BIP_NON");
+    billet(`<p><b>Pas encore.</b></p><p>Une fois dans la ventilation, vous ne reviendrez plus sur le pont C. Varek a été clair : pour trouver l'hôte, il faut tout ce que l'équipage a laissé derrière lui.</p><p>Il reste à fouiller : <b>${reste.join("</b> ; <b>")}</b>.</p>`);
     return;
   }
   Son.jouer("SFX_GRILLE"); defausser(36); S.flags.grille = true; rendu(); sauver();
